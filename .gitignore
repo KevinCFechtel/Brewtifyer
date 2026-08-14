@@ -7,6 +7,8 @@
 *.dll
 *.so
 *.dylib
+*.cgo
+/dist/
 
 # Test binary, built with `go test -c`
 *.test
@@ -24,9 +26,17 @@ profile.cov
 go.work
 go.work.sum
 
-# env file
-.env
+# env files and signing credentials
+*.env
+*.env.*
+!*.env.example
+*.p8
+*.p12
+*.pem
+*.key
 
 # Editor/IDE
 # .idea/
 # .vscode/
+.DS_Store
+*.log

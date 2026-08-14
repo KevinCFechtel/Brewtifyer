@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="background" x1="160" y1="96" x2="864" y2="928" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8bd4f"/>
+      <stop offset="1" stop-color="#cf6618"/>
+    </linearGradient>
+  </defs>
+  <rect x="48" y="48" width="928" height="928" rx="218" fill="url(#background)"/>
+  <path d="M296 432h392v236c0 107-87 194-194 194h-4c-107 0-194-87-194-194V432z" fill="#fff7df"/>
+  <path d="M688 492h42c86 0 156 70 156 156s-70 156-156 156h-72v-74h72c45 0 82-37 82-82s-37-82-82-82h-42v-74z" fill="#fff7df"/>
+  <ellipse cx="492" cy="432" rx="196" ry="58" fill="#fff7df"/>
+  <ellipse cx="492" cy="438" rx="154" ry="31" fill="#6c341d"/>
+  <path d="M366 354c-42-42 42-75 0-117" fill="none" stroke="#fff7df" stroke-width="42" stroke-linecap="round"/>
+  <path d="M492 330c-42-42 42-75 0-117" fill="none" stroke="#fff7df" stroke-width="42" stroke-linecap="round"/>
+  <path d="M618 354c-42-42 42-75 0-117" fill="none" stroke="#fff7df" stroke-width="42" stroke-linecap="round"/>
+</svg>
