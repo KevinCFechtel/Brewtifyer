@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/systray"
 
+	"github.com/KevinCFechtel/Brewtifyer/internal/autostart"
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
 	"github.com/KevinCFechtel/Brewtifyer/internal/monitor"
 	"github.com/KevinCFechtel/Brewtifyer/internal/notification"
@@ -25,7 +26,8 @@ func main() {
 	if brewPath != "" {
 		updater = upgrade.NewTerminalLauncher(brewPath)
 	}
-	app := trayui.New(checker, defaultCheckInterval, resultHandler, updater)
+	autostartController := autostart.NewNativeController()
+	app := trayui.New(checker, defaultCheckInterval, resultHandler, updater, autostartController)
 	systray.Run(app.OnReady, app.OnExit)
 }
 

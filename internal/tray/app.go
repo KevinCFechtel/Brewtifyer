@@ -10,11 +10,15 @@ import (
 
 	"fyne.io/systray"
 
+	"github.com/KevinCFechtel/Brewtifyer/internal/autostart"
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
 	"github.com/KevinCFechtel/Brewtifyer/internal/monitor"
 )
 
-const maxVisibleUpdates = 10
+const (
+	maxVisibleUpdates        = 10
+	autostartRefreshInterval = 5 * time.Second
+)
 
 type Updater interface {
 	UpgradePackage(brew.Package) error
@@ -26,6 +30,7 @@ type App struct {
 	interval      time.Duration
 	resultHandler func(brew.Result)
 	updater       Updater
+	autostart     autostart.Controller
 
 	ctx             context.Context
 	cancel          context.CancelFunc
@@ -34,22 +39,31 @@ type App struct {
 	packagesMutex   sync.RWMutex
 	currentPackages []brew.Package
 
-	statusItem    *systray.MenuItem
-	checkedItem   *systray.MenuItem
-	updateItems   []*systray.MenuItem
-	overflow      *systray.MenuItem
-	updateAllItem *systray.MenuItem
-	refreshItem   *systray.MenuItem
-	quitItem      *systray.MenuItem
+	statusItem            *systray.MenuItem
+	checkedItem           *systray.MenuItem
+	updateItems           []*systray.MenuItem
+	overflow              *systray.MenuItem
+	updateAllItem         *systray.MenuItem
+	refreshItem           *systray.MenuItem
+	autostartItem         *systray.MenuItem
+	autostartSettingsItem *systray.MenuItem
+	quitItem              *systray.MenuItem
 }
 
-func New(checker monitor.Checker, interval time.Duration, resultHandler func(brew.Result), updater Updater) *App {
+func New(
+	checker monitor.Checker,
+	interval time.Duration,
+	resultHandler func(brew.Result),
+	updater Updater,
+	autostartController autostart.Controller,
+) *App {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &App{
 		checker:       checker,
 		interval:      interval,
 		resultHandler: resultHandler,
 		updater:       updater,
+		autostart:     autostartController,
 		ctx:           ctx,
 		cancel:        cancel,
 	}
@@ -82,9 +96,17 @@ func (app *App) OnReady() {
 
 	systray.AddSeparator()
 	app.refreshItem = systray.AddMenuItem("Jetzt prüfen", "Homebrew sofort auf Updates prüfen")
+	app.autostartItem = systray.AddMenuItemCheckbox("Bei Anmeldung starten", "Brewtifyer automatisch starten", false)
+	app.autostartSettingsItem = systray.AddMenuItem(
+		"Anmeldeobjekte in Systemeinstellungen öffnen …",
+		"Autostart für Brewtifyer in macOS freigeben",
+	)
+	app.autostartSettingsItem.Hide()
+	systray.AddSeparator()
 	app.quitItem = systray.AddMenuItem("Beenden", "Brewtifyer beenden")
 
 	app.monitor = monitor.New(app.checker, app.interval, app.render)
+	app.refreshAutostart()
 	app.startBackgroundTasks()
 }
 
@@ -94,7 +116,7 @@ func (app *App) OnExit() {
 }
 
 func (app *App) startBackgroundTasks() {
-	app.wait.Add(4 + len(app.updateItems))
+	app.wait.Add(5 + len(app.updateItems))
 
 	go func() {
 		defer app.wait.Done()
@@ -152,6 +174,30 @@ func (app *App) startBackgroundTasks() {
 					return
 				}
 				app.upgradeAll()
+			}
+		}
+	}()
+
+	go func() {
+		defer app.wait.Done()
+		ticker := time.NewTicker(autostartRefreshInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-app.ctx.Done():
+				return
+			case _, open := <-app.autostartItem.ClickedCh:
+				if !open {
+					return
+				}
+				app.toggleAutostart()
+			case _, open := <-app.autostartSettingsItem.ClickedCh:
+				if !open {
+					return
+				}
+				app.openAutostartSettings()
+			case <-ticker.C:
+				app.refreshAutostart()
 			}
 		}
 	}()
@@ -293,6 +339,141 @@ func (app *App) reportUpgradeError(err error) {
 	log.Printf("Homebrew-Update konnte nicht gestartet werden: %v", err)
 	app.statusItem.SetTitle("Update-Terminal konnte nicht geöffnet werden")
 	app.statusItem.SetTooltip(err.Error())
+}
+
+type autostartMenuState struct {
+	title        string
+	tooltip      string
+	checked      bool
+	enabled      bool
+	showSettings bool
+}
+
+func (app *App) refreshAutostart() {
+	if app.autostart == nil {
+		app.applyAutostartMenuState(autostartMenuStateFor(autostart.Unsupported))
+		return
+	}
+	status, err := app.autostart.Status()
+	if err != nil {
+		app.reportAutostartError(err)
+		return
+	}
+	app.applyAutostartMenuState(autostartMenuStateFor(status))
+}
+
+func (app *App) toggleAutostart() {
+	if app.autostart == nil {
+		return
+	}
+	status, err := app.autostart.Status()
+	if err != nil {
+		app.reportAutostartError(err)
+		return
+	}
+
+	if status == autostart.RequiresApproval {
+		app.openAutostartSettings()
+		return
+	}
+	desiredEnabled, canToggle := autostartToggle(status)
+	if !canToggle {
+		app.applyAutostartMenuState(autostartMenuStateFor(status))
+		return
+	}
+
+	resultingStatus, err := app.autostart.SetEnabled(desiredEnabled)
+	if err != nil {
+		app.reportAutostartError(err)
+		return
+	}
+	app.applyAutostartMenuState(autostartMenuStateFor(resultingStatus))
+	if resultingStatus == autostart.RequiresApproval {
+		app.openAutostartSettings()
+	}
+}
+
+func (app *App) openAutostartSettings() {
+	if app.autostart == nil {
+		return
+	}
+	if err := app.autostart.OpenSettings(); err != nil {
+		app.reportAutostartError(err)
+	}
+}
+
+func (app *App) reportAutostartError(err error) {
+	log.Printf("Autostart konnte nicht verwaltet werden: %v", err)
+	app.autostartItem.SetTitle("Autostart konnte nicht geändert werden")
+	app.autostartItem.SetTooltip(err.Error())
+	app.autostartItem.Disable()
+}
+
+func (app *App) applyAutostartMenuState(menuState autostartMenuState) {
+	app.autostartItem.SetTitle(menuState.title)
+	app.autostartItem.SetTooltip(menuState.tooltip)
+	if menuState.checked {
+		app.autostartItem.Check()
+	} else {
+		app.autostartItem.Uncheck()
+	}
+	if menuState.enabled {
+		app.autostartItem.Enable()
+	} else {
+		app.autostartItem.Disable()
+	}
+	if menuState.showSettings {
+		app.autostartSettingsItem.Show()
+	} else {
+		app.autostartSettingsItem.Hide()
+	}
+}
+
+func autostartMenuStateFor(status autostart.Status) autostartMenuState {
+	switch status {
+	case autostart.Disabled:
+		return autostartMenuState{
+			title:   "Bei Anmeldung starten",
+			tooltip: "Brewtifyer automatisch nach der Anmeldung starten",
+			enabled: true,
+		}
+	case autostart.Enabled:
+		return autostartMenuState{
+			title:   "Bei Anmeldung starten",
+			tooltip: "Autostart für Brewtifyer deaktivieren",
+			checked: true,
+			enabled: true,
+		}
+	case autostart.RequiresApproval:
+		return autostartMenuState{
+			title:        "Bei Anmeldung starten (Freigabe erforderlich)",
+			tooltip:      "In den macOS-Systemeinstellungen freigeben",
+			enabled:      true,
+			showSettings: true,
+		}
+	case autostart.NotFound:
+		return autostartMenuState{
+			title:   "Bei Anmeldung starten",
+			tooltip: "Brewtifyer als Anmeldeobjekt registrieren",
+			enabled: true,
+		}
+	default:
+		return autostartMenuState{
+			title:   "Bei Anmeldung starten (ab macOS 13)",
+			tooltip: "Diese Funktion benötigt macOS 13 oder neuer",
+		}
+	}
+}
+
+func autostartToggle(status autostart.Status) (enabled bool, canToggle bool) {
+	switch status {
+	case autostart.Disabled, autostart.NotFound:
+		return true, true
+	case autostart.Enabled:
+		return false, true
+	default:
+		return false, false
+	}
 }
 
 func packageTitle(pkg brew.Package) string {

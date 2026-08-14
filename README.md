@@ -18,9 +18,10 @@ The first vertical slice is implemented:
 - opens individual package upgrades or `brew upgrade` for all packages in Terminal;
 - sends native macOS notifications for newly available package versions;
 - persists the last update set to avoid duplicate notifications across restarts;
+- offers a native launch-at-login toggle on macOS 13 and later;
 - allows a manual refresh without overlapping checks.
 
-Preferences and login item support are planned next.
+Preferences are planned next.
 
 ## Requirements
 
@@ -48,6 +49,11 @@ Select an update in the menu to run it individually in Terminal, or choose
 `Alle Updates installieren …` to run `brew upgrade`. Homebrew remains
 interactive and keeps its normal confirmation prompts. Pinned packages remain
 pinned and are skipped by Homebrew.
+
+On macOS 13 or later, use `Bei Anmeldung starten` in the menu to register
+Brewtifyer as a login item. If macOS requires approval, Brewtifyer links
+directly to the Login Items panel in System Settings. The menu entry remains
+disabled on macOS 11 and 12.
 
 ## Create a Release
 

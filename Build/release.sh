@@ -55,13 +55,16 @@ if ! security find-identity -v -p codesigning | grep -F -- "${SIGNING_IDENTITY}"
 fi
 
 if [[ -z "${SIGNING_TIMESTAMP_URL}" ]]; then
+  # codesign bietet keinen Schalter an, um den Apple-Timestamp-Dienst nur über
+  # IPv4 aufzurufen. Auf manchen Anschlüssen wird der RFC-3161-Request über IPv6
+  # zwar gesendet, die Antwort bleibt jedoch aus. Daher wird der aktuelle
+  # A-Record dynamisch aufgelöst und nur für diesen Signaturschritt verwendet.
   timestamp_ipv4="$({
     dscacheutil -q host -a name timestamp.apple.com || true
   } | awk '/ip_address:/ && $2 ~ /^[0-9.]+$/ {print $2; exit}')"
 
   if [[ -z "${timestamp_ipv4}" ]]; then
     echo "Keine IPv4-Adresse für timestamp.apple.com gefunden." >&2
-    echo "Alternativ SIGNING_TIMESTAMP_URL explizit setzen." >&2
     exit 1
   fi
 
@@ -89,6 +92,13 @@ codesign \
   "${APP_DIR}"
 
 codesign --verify --deep --strict --verbose=4 "${APP_DIR}"
+
+signature_details="$(codesign --display --verbose=4 "${APP_DIR}" 2>&1)"
+if ! grep -Eq '^Timestamp=' <<<"${signature_details}"; then
+  echo "Die Developer-ID-Signatur enthält keinen sicheren Zeitstempel." >&2
+  echo "Prüfe DNS, Firewall und den Zugriff auf Apples Timestamp-Dienst." >&2
+  exit 1
+fi
 
 mkdir -p "${RELEASE_DIR}"
 

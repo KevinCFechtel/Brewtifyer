@@ -5,6 +5,7 @@ import (
 	"image/png"
 	"testing"
 
+	"github.com/KevinCFechtel/Brewtifyer/internal/autostart"
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
 )
 
@@ -51,5 +52,73 @@ func TestIconIsPNG(t *testing.T) {
 	}
 	if !hasVisiblePixel {
 		t.Fatal("menu bar icon contains no visible pixels")
+	}
+}
+
+func TestAutostartMenuState(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		status       autostart.Status
+		checked      bool
+		enabled      bool
+		showSettings bool
+	}{
+		{name: "unsupported", status: autostart.Unsupported},
+		{name: "disabled", status: autostart.Disabled, enabled: true},
+		{name: "enabled", status: autostart.Enabled, checked: true, enabled: true},
+		{
+			name:         "requires approval",
+			status:       autostart.RequiresApproval,
+			enabled:      true,
+			showSettings: true,
+		},
+		{name: "not found", status: autostart.NotFound, enabled: true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			state := autostartMenuStateFor(test.status)
+			if state.checked != test.checked || state.enabled != test.enabled || state.showSettings != test.showSettings {
+				t.Fatalf(
+					"state = {checked:%t enabled:%t showSettings:%t}",
+					state.checked,
+					state.enabled,
+					state.showSettings,
+				)
+			}
+		})
+	}
+}
+
+func TestAutostartToggle(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		status        autostart.Status
+		wantEnabled   bool
+		wantCanToggle bool
+	}{
+		{status: autostart.Disabled, wantEnabled: true, wantCanToggle: true},
+		{status: autostart.Enabled, wantEnabled: false, wantCanToggle: true},
+		{status: autostart.RequiresApproval},
+		{status: autostart.Unsupported},
+		{status: autostart.NotFound, wantEnabled: true, wantCanToggle: true},
+	}
+
+	for _, test := range tests {
+		enabled, canToggle := autostartToggle(test.status)
+		if enabled != test.wantEnabled || canToggle != test.wantCanToggle {
+			t.Fatalf(
+				"autostartToggle(%d) = (%t, %t), want (%t, %t)",
+				test.status,
+				enabled,
+				canToggle,
+				test.wantEnabled,
+				test.wantCanToggle,
+			)
+		}
 	}
 }
