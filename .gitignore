@@ -40,3 +40,6 @@ go.work.sum
 # .vscode/
 .DS_Store
 *.log
+
+# Local agent instructions
+AGENTS.md
