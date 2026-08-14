@@ -15,6 +15,7 @@ The first vertical slice is implemented:
 - parses `brew outdated --json=v2`;
 - checks immediately and every six hours;
 - displays up to ten available updates in the menu bar;
+- opens individual package upgrades or `brew upgrade` for all packages in Terminal;
 - sends native macOS notifications for newly available package versions;
 - persists the last update set to avoid duplicate notifications across restarts;
 - allows a manual refresh without overlapping checks.
@@ -42,6 +43,11 @@ icon. If Homebrew is installed in a non-standard location, set
 macOS asks for notification permission when Brewtifyer first finds an update.
 The deduplication state is stored in
 `~/Library/Application Support/Brewtifyer/notification-state.json`.
+
+Select an update in the menu to run it individually in Terminal, or choose
+`Alle Updates installieren …` to run `brew upgrade`. Homebrew remains
+interactive and keeps its normal confirmation prompts. Pinned packages remain
+pinned and are skipped by Homebrew.
 
 ## Create a Release
 

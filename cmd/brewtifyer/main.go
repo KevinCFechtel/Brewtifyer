@@ -13,14 +13,19 @@ import (
 	"github.com/KevinCFechtel/Brewtifyer/internal/monitor"
 	"github.com/KevinCFechtel/Brewtifyer/internal/notification"
 	trayui "github.com/KevinCFechtel/Brewtifyer/internal/tray"
+	"github.com/KevinCFechtel/Brewtifyer/internal/upgrade"
 )
 
 const defaultCheckInterval = 6 * time.Hour
 
 func main() {
-	checker := newChecker()
+	brewPath, checker := newChecker()
 	resultHandler := newResultHandler()
-	app := trayui.New(checker, defaultCheckInterval, resultHandler)
+	var updater trayui.Updater
+	if brewPath != "" {
+		updater = upgrade.NewTerminalLauncher(brewPath)
+	}
+	app := trayui.New(checker, defaultCheckInterval, resultHandler, updater)
 	systray.Run(app.OnReady, app.OnExit)
 }
 
@@ -39,13 +44,13 @@ func newResultHandler() func(brew.Result) {
 	}
 }
 
-func newChecker() monitor.Checker {
+func newChecker() (string, monitor.Checker) {
 	brewPath, err := brew.Locate(os.Getenv("BREWTIFYER_BREW_PATH"))
 	if err != nil {
-		return monitor.CheckerFunc(func(context.Context) (brew.Result, error) {
+		return "", monitor.CheckerFunc(func(context.Context) (brew.Result, error) {
 			return brew.Result{}, errors.New("Homebrew wurde nicht gefunden")
 		})
 	}
 
-	return brew.NewClient(brewPath)
+	return brewPath, brew.NewClient(brewPath)
 }
