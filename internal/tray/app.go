@@ -16,8 +16,9 @@ import (
 const maxVisibleUpdates = 10
 
 type App struct {
-	checker  monitor.Checker
-	interval time.Duration
+	checker       monitor.Checker
+	interval      time.Duration
+	resultHandler func(brew.Result)
 
 	ctx     context.Context
 	cancel  context.CancelFunc
@@ -32,13 +33,14 @@ type App struct {
 	quitItem    *systray.MenuItem
 }
 
-func New(checker monitor.Checker, interval time.Duration) *App {
+func New(checker monitor.Checker, interval time.Duration, resultHandler func(brew.Result)) *App {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &App{
-		checker:  checker,
-		interval: interval,
-		ctx:      ctx,
-		cancel:   cancel,
+		checker:       checker,
+		interval:      interval,
+		resultHandler: resultHandler,
+		ctx:           ctx,
+		cancel:        cancel,
 	}
 }
 
@@ -131,6 +133,9 @@ func (app *App) render(state monitor.State) {
 	}
 
 	app.renderResult(*state.Result)
+	if app.resultHandler != nil {
+		app.resultHandler(*state.Result)
+	}
 }
 
 func (app *App) renderResult(result brew.Result) {
