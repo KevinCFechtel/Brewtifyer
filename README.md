@@ -43,7 +43,7 @@ A signed and notarized release requires an Apple Developer ID and a
 `notarytool` profile stored locally in the Keychain:
 
 ```sh
-xcrun notarytool store-credentials Brewtifyer-notary
+xcrun notarytool store-credentials macos-notary
 cp Build/.env.example Build/.env
 ./Build/release.sh
 ```
@@ -53,6 +53,9 @@ cp Build/.env.example Build/.env
 
 The committed app icon can be regenerated from `assets/BrewtifyerIcon.png`
 with `./Build/generate-icons.sh`.
+
+The monochrome menu bar icon can be regenerated from
+`internal/tray/menu_bar_icon.svg` with `./Build/generate-menu-bar-icon.sh`.
 
 ## Development
 
