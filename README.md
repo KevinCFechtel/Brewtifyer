@@ -114,6 +114,13 @@ The application and menu bar icons can be regenerated with:
 ./Build/generate-menu-bar-icon.sh
 ```
 
+The application icon uses an Icon Composer source at `assets/AppIcon.icon` for
+the adaptive light, dark, and tinted appearances on current macOS versions.
+`Build/Assets.car` contains the compiled icon, while `Build/AppIcon.icns`
+remains the fallback for older supported macOS versions. Regenerating these
+application icon artifacts requires Xcode 26 or later. The menu bar template
+icon is maintained separately and is not part of the adaptive app icon.
+
 ## Localization
 
 English is Brewtifyer's source and fallback language. German is maintained in

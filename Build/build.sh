@@ -29,6 +29,7 @@ rm -rf -- "${APP_DIR}"
 mkdir -p "${MACOS_DIR}" "${RESOURCES_DIR}"
 install -m 0644 "${SCRIPT_DIR}/Info.plist" "${INFO_PLIST}"
 install -m 0644 "${SCRIPT_DIR}/AppIcon.icns" "${RESOURCES_DIR}/AppIcon.icns"
+install -m 0644 "${SCRIPT_DIR}/Assets.car" "${RESOURCES_DIR}/Assets.car"
 
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${APP_VERSION}" "${INFO_PLIST}"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${APP_BUILD_NUMBER}" "${INFO_PLIST}"
