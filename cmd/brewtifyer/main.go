@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/KevinCFechtel/Brewtifyer/internal/autostart"
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
+	"github.com/KevinCFechtel/Brewtifyer/internal/buildinfo"
 	"github.com/KevinCFechtel/Brewtifyer/internal/localization"
 	"github.com/KevinCFechtel/Brewtifyer/internal/monitor"
 	"github.com/KevinCFechtel/Brewtifyer/internal/notification"
@@ -21,6 +23,12 @@ import (
 const defaultCheckInterval = 6 * time.Hour
 
 func main() {
+	if len(os.Args) == 2 && os.Args[1] == "--version" {
+		fmt.Printf("Brewtifyer %s\n", buildinfo.Summary())
+		return
+	}
+	log.Printf("starting Brewtifyer %s", buildinfo.Summary())
+
 	texts, err := localization.NewDetected()
 	if err != nil {
 		log.Fatalf("localization could not be initialized: %v", err)

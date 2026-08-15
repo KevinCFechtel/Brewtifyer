@@ -92,6 +92,7 @@ The project intentionally uses shell scripts instead of a Makefile:
 ./Build/localization.sh
 ./Build/test.sh
 ./Build/vet.sh
+./Build/version.sh
 ./Build/run.sh
 ```
 
@@ -139,6 +140,40 @@ catalogs are complete and match the Go source.
 At runtime, `BREWTIFYER_LANGUAGE` can override the operating system language,
 for example `BREWTIFYER_LANGUAGE=en` or `BREWTIFYER_LANGUAGE=de`.
 
+## Versioning
+
+The platform-independent release version is stored in `VERSION` using the
+`MAJOR.MINOR.PATCH` format. `BUILD_NUMBER` contains the positive, monotonically
+increasing number of the concrete build. `Build/Info.plist` is only a template;
+`Build/build.sh` writes both values into the generated app bundle and embeds
+the version, build number, and Git commit in the Go binary.
+
+The metadata embedded in a built binary can be inspected with:
+
+```sh
+dist/Brewtifyer.app/Contents/MacOS/Brewtifyer --version
+```
+
+To prepare a new version, update both files and verify them:
+
+```sh
+# Example: VERSION contains 0.2.0 and BUILD_NUMBER contains 2
+./Build/version.sh
+./Build/test.sh
+./Build/vet.sh
+```
+
+Commit the version change and optionally create an annotated release tag that
+matches `v$(cat VERSION)`, for example:
+
+```sh
+git tag -a v0.2.0 -m "Brewtifyer 0.2.0"
+```
+
+If the current commit already has a tag beginning with `v`, the release script
+requires it to match `VERSION`. Rebuilding the same release version is possible
+by keeping `VERSION` and increasing only `BUILD_NUMBER`.
+
 ## Creating a Release
 
 Signed and notarized releases require an Apple Developer ID Application
@@ -151,8 +186,9 @@ cp Build/.env.example Build/.env
 ```
 
 `Build/.env` is ignored by Git. The release script verifies the secure
-timestamp, code signature, notarization ticket, Gatekeeper acceptance, and the
-final extracted archive. Completed archives are written to `dist/release/`.
+timestamp, code signature, notarization ticket, Gatekeeper acceptance, version
+metadata, and the final extracted archive. Completed archives are written to
+`dist/release/`.
 
 ## Contributing
 
