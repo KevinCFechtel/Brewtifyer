@@ -34,7 +34,7 @@ static void BrewtifyerSetErrorMessage(char **errorMessage, NSError *error)
     }
     NSString *message = error.localizedDescription;
     if (message == nil || message.length == 0) {
-        message = @"Autostart konnte nicht geändert werden";
+        message = @"Launch at login could not be changed";
     }
     *errorMessage = strdup(message.UTF8String);
 }

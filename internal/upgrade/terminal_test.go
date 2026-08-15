@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
+	"github.com/KevinCFechtel/Brewtifyer/internal/localization"
 )
 
 func TestUpgradePackageCreatesFormulaCommand(t *testing.T) {
@@ -92,6 +93,7 @@ func TestCommandFileIsExecutableAndSelfRemoving(t *testing.T) {
 	launcher := &TerminalLauncher{
 		brewPath: "/opt/homebrew/bin/brew",
 		tempDir:  temporaryDirectory,
+		texts:    localization.MustNew("de"),
 	}
 	launcher.openFile = func(commandPath string) error {
 		information, err := os.Stat(commandPath)
@@ -123,6 +125,7 @@ func TestFailedOpenRemovesCommandFile(t *testing.T) {
 	launcher := &TerminalLauncher{
 		brewPath: "/opt/homebrew/bin/brew",
 		tempDir:  temporaryDirectory,
+		texts:    localization.MustNew("de"),
 		openFile: func(string) error {
 			return errors.New("open failed")
 		},
@@ -143,7 +146,7 @@ func TestFailedOpenRemovesCommandFile(t *testing.T) {
 func TestUpgradePackageRejectsUnknownKind(t *testing.T) {
 	t.Parallel()
 
-	launcher := NewTerminalLauncher("/opt/homebrew/bin/brew")
+	launcher := NewTerminalLauncher("/opt/homebrew/bin/brew", localization.MustNew("de"))
 	err := launcher.UpgradePackage(brew.Package{Name: "example", Kind: "unknown"})
 	if err == nil {
 		t.Fatal("UpgradePackage() error = nil, want unknown kind error")
@@ -161,11 +164,33 @@ func TestGeneratedCommandHasValidZshSyntax(t *testing.T) {
 		"/opt/homebrew/bin/brew",
 		[]string{"upgrade", "--formula", "example'; echo unsafe; '"},
 		"Homebrew-Update für example'; echo unsafe; '",
+		localization.MustNew("de"),
 	)
 	command := exec.Command(zshPath, "-n")
 	command.Stdin = strings.NewReader(script)
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("zsh rejected generated command: %v\n%s", err, output)
+	}
+}
+
+func TestGeneratedCommandUsesSelectedLanguage(t *testing.T) {
+	t.Parallel()
+
+	texts := localization.MustNew("en")
+	script := commandScript(
+		"/opt/homebrew/bin/brew",
+		[]string{"upgrade"},
+		texts.UpgradeAllDescription(),
+		texts,
+	)
+	for _, expected := range []string{
+		"All Homebrew updates",
+		"Update completed. Check Brewtifyer again afterwards.",
+		"Press any key to close the window …",
+	} {
+		if !strings.Contains(script, expected) {
+			t.Fatalf("script does not contain %q:\n%s", expected, script)
+		}
 	}
 }
 
@@ -176,6 +201,7 @@ func testLauncher(t *testing.T) (*TerminalLauncher, <-chan string) {
 	launcher := &TerminalLauncher{
 		brewPath: "/opt/homebrew/bin/brew",
 		tempDir:  filepath.Clean(t.TempDir()),
+		texts:    localization.MustNew("de"),
 	}
 	launcher.openFile = func(commandPath string) error {
 		content, err := os.ReadFile(commandPath)

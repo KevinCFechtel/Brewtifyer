@@ -12,6 +12,7 @@ import (
 
 	"github.com/KevinCFechtel/Brewtifyer/internal/autostart"
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
+	"github.com/KevinCFechtel/Brewtifyer/internal/localization"
 	"github.com/KevinCFechtel/Brewtifyer/internal/monitor"
 )
 
@@ -31,6 +32,7 @@ type App struct {
 	resultHandler func(brew.Result)
 	updater       Updater
 	autostart     autostart.Controller
+	texts         *localization.Strings
 
 	ctx             context.Context
 	cancel          context.CancelFunc
@@ -56,6 +58,7 @@ func New(
 	resultHandler func(brew.Result),
 	updater Updater,
 	autostartController autostart.Controller,
+	texts *localization.Strings,
 ) *App {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &App{
@@ -64,6 +67,7 @@ func New(
 		resultHandler: resultHandler,
 		updater:       updater,
 		autostart:     autostartController,
+		texts:         texts,
 		ctx:           ctx,
 		cancel:        cancel,
 	}
@@ -72,17 +76,17 @@ func New(
 func (app *App) OnReady() {
 	icon := iconPNG()
 	systray.SetTemplateIcon(icon, icon)
-	systray.SetTooltip("Brewtifyer – Homebrew Updates")
+	systray.SetTooltip(app.texts.TrayTooltip())
 	systray.SetRemovalAllowed(false)
 
-	app.statusItem = systray.AddMenuItem("Homebrew wird geprüft …", "Aktueller Homebrew-Status")
+	app.statusItem = systray.AddMenuItem(app.texts.Checking(), app.texts.CurrentStatusTooltip())
 	app.statusItem.Disable()
-	app.checkedItem = systray.AddMenuItem("Noch nicht geprüft", "Zeitpunkt der letzten Prüfung")
+	app.checkedItem = systray.AddMenuItem(app.texts.NotChecked(), app.texts.LastCheckTooltip())
 	app.checkedItem.Disable()
 	systray.AddSeparator()
 
 	for range maxVisibleUpdates {
-		item := systray.AddMenuItem("", "Im Terminal aktualisieren")
+		item := systray.AddMenuItem("", app.texts.UpgradePackageMenuTooltip())
 		item.Disable()
 		item.Hide()
 		app.updateItems = append(app.updateItems, item)
@@ -90,20 +94,20 @@ func (app *App) OnReady() {
 	app.overflow = systray.AddMenuItem("", "")
 	app.overflow.Disable()
 	app.overflow.Hide()
-	app.updateAllItem = systray.AddMenuItem("Alle Updates installieren …", "brew upgrade im Terminal ausführen")
+	app.updateAllItem = systray.AddMenuItem(app.texts.UpgradeAll(), app.texts.UpgradeAllTooltip())
 	app.updateAllItem.Disable()
 	app.updateAllItem.Hide()
 
 	systray.AddSeparator()
-	app.refreshItem = systray.AddMenuItem("Jetzt prüfen", "Homebrew sofort auf Updates prüfen")
-	app.autostartItem = systray.AddMenuItemCheckbox("Bei Anmeldung starten", "Brewtifyer automatisch starten", false)
+	app.refreshItem = systray.AddMenuItem(app.texts.Refresh(), app.texts.RefreshTooltip())
+	app.autostartItem = systray.AddMenuItemCheckbox(app.texts.AutostartTitle(), app.texts.AutostartEnableTooltip(), false)
 	app.autostartSettingsItem = systray.AddMenuItem(
-		"Anmeldeobjekte in Systemeinstellungen öffnen …",
-		"Autostart für Brewtifyer in macOS freigeben",
+		app.texts.OpenLoginItems(),
+		app.texts.OpenLoginItemsTooltip(),
 	)
 	app.autostartSettingsItem.Hide()
 	systray.AddSeparator()
-	app.quitItem = systray.AddMenuItem("Beenden", "Brewtifyer beenden")
+	app.quitItem = systray.AddMenuItem(app.texts.Quit(), app.texts.QuitTooltip())
 
 	app.monitor = monitor.New(app.checker, app.interval, app.render)
 	app.refreshAutostart()
@@ -206,7 +210,7 @@ func (app *App) startBackgroundTasks() {
 func (app *App) render(state monitor.State) {
 	if state.Checking {
 		systray.SetTitle("…")
-		app.statusItem.SetTitle("Homebrew wird geprüft …")
+		app.statusItem.SetTitle(app.texts.Checking())
 		app.refreshItem.Disable()
 		return
 	}
@@ -214,7 +218,7 @@ func (app *App) render(state monitor.State) {
 	app.refreshItem.Enable()
 	if state.Err != nil {
 		systray.SetTitle("!")
-		app.statusItem.SetTitle("Fehler bei der Prüfung")
+		app.statusItem.SetTitle(app.texts.CheckFailed())
 		app.checkedItem.SetTitle(shortError(state.Err))
 		app.checkedItem.SetTooltip(state.Err.Error())
 		app.hideUpdates()
@@ -238,18 +242,17 @@ func (app *App) renderResult(result brew.Result) {
 
 	if count == 0 {
 		systray.SetTitle("")
-		app.statusItem.SetTitle("Homebrew ist aktuell")
+		app.statusItem.SetTitle(app.texts.UpToDate())
 	} else {
 		systray.SetTitle(fmt.Sprintf("%d", count))
-		app.statusItem.SetTitle(updateCountTitle(count))
+		app.statusItem.SetTitle(app.texts.UpdatesAvailable(count))
 	}
 
-	checkedTitle := "Zuletzt geprüft: " + result.CheckedAt.Format("02.01.2006, 15:04")
+	checkedTitle := app.texts.LastChecked(result.CheckedAt, result.Warning != "")
 	if result.Warning != "" {
-		checkedTitle += " (mit Warnung)"
 		app.checkedItem.SetTooltip(result.Warning)
 	} else {
-		app.checkedItem.SetTooltip("Zeitpunkt der letzten erfolgreichen Prüfung")
+		app.checkedItem.SetTooltip(app.texts.LastSuccessfulCheckTooltip())
 	}
 	app.checkedItem.SetTitle(checkedTitle)
 
@@ -259,8 +262,8 @@ func (app *App) renderResult(result brew.Result) {
 			item.Hide()
 			continue
 		}
-		item.SetTitle(packageTitle(result.Packages[index]))
-		item.SetTooltip(packageUpdateTooltip(result.Packages[index]))
+		item.SetTitle(packageTitle(app.texts, result.Packages[index]))
+		item.SetTooltip(packageUpdateTooltip(app.texts, result.Packages[index]))
 		if app.updater != nil {
 			item.Enable()
 		} else {
@@ -271,7 +274,7 @@ func (app *App) renderResult(result brew.Result) {
 
 	remaining := count - len(app.updateItems)
 	if remaining > 0 {
-		app.overflow.SetTitle(fmt.Sprintf("… und %d weitere", remaining))
+		app.overflow.SetTitle(app.texts.MoreUpdates(remaining))
 		app.overflow.Show()
 	} else {
 		app.overflow.Hide()
@@ -321,7 +324,7 @@ func (app *App) upgradePackage(index int) {
 		app.reportUpgradeError(err)
 		return
 	}
-	app.statusItem.SetTitle("Update läuft im Terminal …")
+	app.statusItem.SetTitle(app.texts.UpgradePackageRunning())
 }
 
 func (app *App) upgradeAll() {
@@ -332,12 +335,12 @@ func (app *App) upgradeAll() {
 		app.reportUpgradeError(err)
 		return
 	}
-	app.statusItem.SetTitle("Updates laufen im Terminal …")
+	app.statusItem.SetTitle(app.texts.UpgradeAllRunning())
 }
 
 func (app *App) reportUpgradeError(err error) {
-	log.Printf("Homebrew-Update konnte nicht gestartet werden: %v", err)
-	app.statusItem.SetTitle("Update-Terminal konnte nicht geöffnet werden")
+	log.Printf("Homebrew upgrade could not be started: %v", err)
+	app.statusItem.SetTitle(app.texts.UpgradeLaunchFailed())
 	app.statusItem.SetTooltip(err.Error())
 }
 
@@ -351,7 +354,7 @@ type autostartMenuState struct {
 
 func (app *App) refreshAutostart() {
 	if app.autostart == nil {
-		app.applyAutostartMenuState(autostartMenuStateFor(autostart.Unsupported))
+		app.applyAutostartMenuState(autostartMenuStateFor(app.texts, autostart.Unsupported))
 		return
 	}
 	status, err := app.autostart.Status()
@@ -359,7 +362,7 @@ func (app *App) refreshAutostart() {
 		app.reportAutostartError(err)
 		return
 	}
-	app.applyAutostartMenuState(autostartMenuStateFor(status))
+	app.applyAutostartMenuState(autostartMenuStateFor(app.texts, status))
 }
 
 func (app *App) toggleAutostart() {
@@ -378,7 +381,7 @@ func (app *App) toggleAutostart() {
 	}
 	desiredEnabled, canToggle := autostartToggle(status)
 	if !canToggle {
-		app.applyAutostartMenuState(autostartMenuStateFor(status))
+		app.applyAutostartMenuState(autostartMenuStateFor(app.texts, status))
 		return
 	}
 
@@ -387,7 +390,7 @@ func (app *App) toggleAutostart() {
 		app.reportAutostartError(err)
 		return
 	}
-	app.applyAutostartMenuState(autostartMenuStateFor(resultingStatus))
+	app.applyAutostartMenuState(autostartMenuStateFor(app.texts, resultingStatus))
 	if resultingStatus == autostart.RequiresApproval {
 		app.openAutostartSettings()
 	}
@@ -403,8 +406,8 @@ func (app *App) openAutostartSettings() {
 }
 
 func (app *App) reportAutostartError(err error) {
-	log.Printf("Autostart konnte nicht verwaltet werden: %v", err)
-	app.autostartItem.SetTitle("Autostart konnte nicht geändert werden")
+	log.Printf("launch at login could not be managed: %v", err)
+	app.autostartItem.SetTitle(app.texts.AutostartManageFailed())
 	app.autostartItem.SetTooltip(err.Error())
 	app.autostartItem.Disable()
 }
@@ -429,38 +432,38 @@ func (app *App) applyAutostartMenuState(menuState autostartMenuState) {
 	}
 }
 
-func autostartMenuStateFor(status autostart.Status) autostartMenuState {
+func autostartMenuStateFor(texts *localization.Strings, status autostart.Status) autostartMenuState {
 	switch status {
 	case autostart.Disabled:
 		return autostartMenuState{
-			title:   "Bei Anmeldung starten",
-			tooltip: "Brewtifyer automatisch nach der Anmeldung starten",
+			title:   texts.AutostartTitle(),
+			tooltip: texts.AutostartEnableTooltip(),
 			enabled: true,
 		}
 	case autostart.Enabled:
 		return autostartMenuState{
-			title:   "Bei Anmeldung starten",
-			tooltip: "Autostart für Brewtifyer deaktivieren",
+			title:   texts.AutostartTitle(),
+			tooltip: texts.AutostartDisableTooltip(),
 			checked: true,
 			enabled: true,
 		}
 	case autostart.RequiresApproval:
 		return autostartMenuState{
-			title:        "Bei Anmeldung starten (Freigabe erforderlich)",
-			tooltip:      "In den macOS-Systemeinstellungen freigeben",
+			title:        texts.AutostartApprovalTitle(),
+			tooltip:      texts.AutostartApprovalTooltip(),
 			enabled:      true,
 			showSettings: true,
 		}
 	case autostart.NotFound:
 		return autostartMenuState{
-			title:   "Bei Anmeldung starten",
-			tooltip: "Brewtifyer als Anmeldeobjekt registrieren",
+			title:   texts.AutostartTitle(),
+			tooltip: texts.AutostartRegisterTooltip(),
 			enabled: true,
 		}
 	default:
 		return autostartMenuState{
-			title:   "Bei Anmeldung starten (ab macOS 13)",
-			tooltip: "Diese Funktion benötigt macOS 13 oder neuer",
+			title:   texts.AutostartUnsupportedTitle(),
+			tooltip: texts.AutostartUnsupportedTooltip(),
 		}
 	}
 }
@@ -476,30 +479,19 @@ func autostartToggle(status autostart.Status) (enabled bool, canToggle bool) {
 	}
 }
 
-func packageTitle(pkg brew.Package) string {
+func packageTitle(texts *localization.Strings, pkg brew.Package) string {
 	installed := strings.Join(pkg.InstalledVersions, ", ")
 	if installed == "" {
 		installed = "?"
 	}
-	pinned := ""
-	if pkg.Pinned {
-		pinned = " · angeheftet"
-	}
-	return fmt.Sprintf("%s: %s → %s%s", pkg.Name, installed, pkg.CurrentVersion, pinned)
+	return texts.PackageTitle(pkg.Name, installed, pkg.CurrentVersion, pkg.Pinned)
 }
 
-func packageUpdateTooltip(pkg brew.Package) string {
+func packageUpdateTooltip(texts *localization.Strings, pkg brew.Package) string {
 	if pkg.Pinned {
-		return "Im Terminal öffnen; Homebrew überspringt angeheftete Pakete"
+		return texts.PinnedPackageTooltip()
 	}
-	return "Dieses Paket im Terminal aktualisieren"
-}
-
-func updateCountTitle(count int) string {
-	if count == 1 {
-		return "1 Update verfügbar"
-	}
-	return fmt.Sprintf("%d Updates verfügbar", count)
+	return texts.PackageUpgradeTooltip()
 }
 
 func shortError(err error) string {

@@ -7,18 +7,33 @@ import (
 
 	"github.com/KevinCFechtel/Brewtifyer/internal/autostart"
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
+	"github.com/KevinCFechtel/Brewtifyer/internal/localization"
 )
 
 func TestPackageTitle(t *testing.T) {
 	t.Parallel()
 
-	title := packageTitle(brew.Package{
+	title := packageTitle(localization.MustNew("de"), brew.Package{
 		Name:              "go",
 		InstalledVersions: []string{"1.26.5"},
 		CurrentVersion:    "1.26.6",
 		Pinned:            true,
 	})
 	if title != "go: 1.26.5 → 1.26.6 · angeheftet" {
+		t.Fatalf("packageTitle() = %q", title)
+	}
+}
+
+func TestPackageTitleUsesSelectedLanguage(t *testing.T) {
+	t.Parallel()
+
+	title := packageTitle(localization.MustNew("en"), brew.Package{
+		Name:              "go",
+		InstalledVersions: []string{"1.26.5"},
+		CurrentVersion:    "1.26.6",
+		Pinned:            true,
+	})
+	if title != "go: 1.26.5 → 1.26.6 · pinned" {
 		t.Fatalf("packageTitle() = %q", title)
 	}
 }
@@ -80,7 +95,7 @@ func TestAutostartMenuState(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			state := autostartMenuStateFor(test.status)
+			state := autostartMenuStateFor(localization.MustNew("de"), test.status)
 			if state.checked != test.checked || state.enabled != test.enabled || state.showSettings != test.showSettings {
 				t.Fatalf(
 					"state = {checked:%t enabled:%t showSettings:%t}",

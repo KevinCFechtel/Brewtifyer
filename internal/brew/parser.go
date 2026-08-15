@@ -27,25 +27,25 @@ func ParseOutdated(reader io.Reader) ([]Package, error) {
 
 	var document outdatedDocument
 	if err := decoder.Decode(&document); err != nil {
-		return nil, fmt.Errorf("Homebrew-Ausgabe konnte nicht gelesen werden: %w", err)
+		return nil, fmt.Errorf("Homebrew output could not be read: %w", err)
 	}
 
 	var trailing any
 	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
 		if err == nil {
-			return nil, errors.New("Homebrew-Ausgabe enthält zusätzliche JSON-Daten")
+			return nil, errors.New("Homebrew output contains additional JSON data")
 		}
-		return nil, fmt.Errorf("Homebrew-Ausgabe enthält ungültige Daten: %w", err)
+		return nil, fmt.Errorf("Homebrew output contains invalid data: %w", err)
 	}
 
 	packages := make([]Package, 0, len(document.Formulae)+len(document.Casks))
 	appendEntries := func(entries []outdatedEntry, kind Kind) error {
 		for _, entry := range entries {
 			if strings.TrimSpace(entry.Name) == "" {
-				return fmt.Errorf("Homebrew meldet ein %s ohne Namen", kind)
+				return fmt.Errorf("Homebrew reported a %s without a name", kind)
 			}
 			if strings.TrimSpace(entry.CurrentVersion) == "" {
-				return fmt.Errorf("Homebrew meldet für %q keine aktuelle Version", entry.Name)
+				return fmt.Errorf("Homebrew reported no current version for %q", entry.Name)
 			}
 
 			packages = append(packages, Package{

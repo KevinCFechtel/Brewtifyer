@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
+	"github.com/KevinCFechtel/Brewtifyer/internal/localization"
 )
 
 const terminalApplication = "Terminal"
@@ -18,21 +19,26 @@ type TerminalLauncher struct {
 	brewPath string
 	tempDir  string
 	openFile func(string) error
+	texts    *localization.Strings
 }
 
-func NewTerminalLauncher(brewPath string) *TerminalLauncher {
-	return &TerminalLauncher{
+func NewTerminalLauncher(brewPath string, texts *localization.Strings) *TerminalLauncher {
+	launcher := &TerminalLauncher{
 		brewPath: brewPath,
-		openFile: openInTerminal,
+		texts:    texts,
 	}
+	launcher.openFile = func(commandPath string) error {
+		return openInTerminal(commandPath, texts)
+	}
+	return launcher
 }
 
 func (launcher *TerminalLauncher) UpgradePackage(currentPackage brew.Package) error {
 	if currentPackage.Name == "" {
-		return fmt.Errorf("Paketname fehlt")
+		return fmt.Errorf("%s", launcher.texts.PackageNameMissing())
 	}
 	if strings.ContainsRune(currentPackage.Name, '\x00') {
-		return fmt.Errorf("Paketname enthält ein ungültiges Zeichen")
+		return fmt.Errorf("%s", launcher.texts.PackageNameInvalid())
 	}
 
 	arguments := []string{"upgrade"}
@@ -42,20 +48,20 @@ func (launcher *TerminalLauncher) UpgradePackage(currentPackage brew.Package) er
 	case brew.Cask:
 		arguments = append(arguments, "--cask")
 	default:
-		return fmt.Errorf("unbekannter Pakettyp: %q", currentPackage.Kind)
+		return fmt.Errorf("%s", launcher.texts.UnknownPackageKind(string(currentPackage.Kind)))
 	}
 	arguments = append(arguments, currentPackage.Name)
-	return launcher.launch(arguments, "Homebrew-Update für "+currentPackage.Name)
+	return launcher.launch(arguments, launcher.texts.UpgradePackageDescription(currentPackage.Name))
 }
 
 func (launcher *TerminalLauncher) UpgradeAll() error {
-	return launcher.launch([]string{"upgrade"}, "Alle Homebrew-Updates")
+	return launcher.launch([]string{"upgrade"}, launcher.texts.UpgradeAllDescription())
 }
 
 func (launcher *TerminalLauncher) launch(arguments []string, description string) error {
 	commandFile, err := os.CreateTemp(launcher.tempDir, "brewtifyer-upgrade-*.command")
 	if err != nil {
-		return fmt.Errorf("temporärer Update-Befehl konnte nicht erstellt werden: %w", err)
+		return fmt.Errorf("%s: %w", launcher.texts.CreateUpgradeCommandError(), err)
 	}
 	commandPath := commandFile.Name()
 	keepCommand := false
@@ -67,13 +73,13 @@ func (launcher *TerminalLauncher) launch(arguments []string, description string)
 	}()
 
 	if err := commandFile.Chmod(0o700); err != nil {
-		return fmt.Errorf("Update-Befehl konnte nicht ausführbar gemacht werden: %w", err)
+		return fmt.Errorf("%s: %w", launcher.texts.MakeUpgradeCommandExecutableError(), err)
 	}
-	if _, err := commandFile.WriteString(commandScript(launcher.brewPath, arguments, description)); err != nil {
-		return fmt.Errorf("Update-Befehl konnte nicht geschrieben werden: %w", err)
+	if _, err := commandFile.WriteString(commandScript(launcher.brewPath, arguments, description, launcher.texts)); err != nil {
+		return fmt.Errorf("%s: %w", launcher.texts.WriteUpgradeCommandError(), err)
 	}
 	if err := commandFile.Close(); err != nil {
-		return fmt.Errorf("Update-Befehl konnte nicht geschlossen werden: %w", err)
+		return fmt.Errorf("%s: %w", launcher.texts.CloseUpgradeCommandError(), err)
 	}
 
 	if err := launcher.openFile(commandPath); err != nil {
@@ -83,19 +89,19 @@ func (launcher *TerminalLauncher) launch(arguments []string, description string)
 	return nil
 }
 
-func openInTerminal(commandPath string) error {
+func openInTerminal(commandPath string, texts *localization.Strings) error {
 	output, err := exec.Command("/usr/bin/open", "-a", terminalApplication, commandPath).CombinedOutput()
 	if err != nil {
 		message := strings.TrimSpace(string(output))
 		if message == "" {
-			return fmt.Errorf("Terminal konnte nicht geöffnet werden: %w", err)
+			return fmt.Errorf("%s: %w", texts.OpenTerminalError(), err)
 		}
-		return fmt.Errorf("Terminal konnte nicht geöffnet werden: %s: %w", message, err)
+		return fmt.Errorf("%s: %s: %w", texts.OpenTerminalError(), message, err)
 	}
 	return nil
 }
 
-func commandScript(brewPath string, arguments []string, description string) string {
+func commandScript(brewPath string, arguments []string, description string, texts *localization.Strings) string {
 	command := make([]string, 0, len(arguments)+1)
 	command = append(command, brewPath)
 	command = append(command, arguments...)
@@ -111,11 +117,11 @@ func commandScript(brewPath string, arguments []string, description string) stri
 		strings.Join(command, " ") + "\n" +
 		"update_status=$?\n\n" +
 		"if (( update_status == 0 )); then\n" +
-		"  printf '\\nUpdate abgeschlossen. Prüfe Brewtifyer anschließend erneut.\\n'\n" +
+		"  printf '\\n%s\\n' " + shellQuote(texts.UpgradeCompleted()) + "\n" +
 		"else\n" +
-		"  printf '\\nUpdate mit Status %d beendet.\\n' \"$update_status\"\n" +
+		"  printf " + shellQuote("\n"+texts.UpgradeFailedFormat()+"\n") + " \"$update_status\"\n" +
 		"fi\n" +
-		"printf 'Zum Schließen des Fensters eine Taste drücken …'\n" +
+		"printf '%s' " + shellQuote(texts.UpgradePressAnyKey()) + "\n" +
 		"read -r -k 1\n" +
 		"printf '\\n'\n" +
 		"exit \"$update_status\"\n"

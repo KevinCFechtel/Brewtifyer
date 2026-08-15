@@ -1,0 +1,291 @@
+{
+  "Error.CloseUpgradeCommand": {
+    "description": "Error prefix when the temporary update command cannot be closed.",
+    "hash": "sha1-b370247961972acc29234ecb130960515062fc4e",
+    "other": "Der Update-Befehl konnte nicht geschlossen werden"
+  },
+  "Error.CreateUpgradeCommand": {
+    "description": "Error prefix when the temporary update command cannot be created.",
+    "hash": "sha1-1057864d97c13e3e6bf68943d2a1d38858a79213",
+    "other": "Der temporäre Update-Befehl konnte nicht erstellt werden"
+  },
+  "Error.HomebrewNotFound": {
+    "description": "Error shown when no Homebrew executable can be found.",
+    "hash": "sha1-ca0869339b5b6b0ccb79dc20906c268623aec9e7",
+    "other": "Homebrew wurde nicht gefunden"
+  },
+  "Error.MakeUpgradeCommandExecutable": {
+    "description": "Error prefix when the temporary update command cannot be made executable.",
+    "hash": "sha1-526f90a747ca19311410e0c6a14be79b09046aa4",
+    "other": "Der Update-Befehl konnte nicht ausführbar gemacht werden"
+  },
+  "Error.OpenTerminal": {
+    "description": "Error prefix when Terminal cannot be opened.",
+    "hash": "sha1-223da6cd31e0a10966a25207213568a2e69d88d2",
+    "other": "Terminal konnte nicht geöffnet werden"
+  },
+  "Error.PackageKindUnknown": {
+    "description": "Error shown when an update package has an unknown kind.",
+    "hash": "sha1-790431bb39384da24c7a0c0ea950ffeb4640d2dd",
+    "other": "Unbekannter Pakettyp: {{.Kind}}"
+  },
+  "Error.PackageNameInvalid": {
+    "description": "Error shown when a package name contains an invalid null character.",
+    "hash": "sha1-7fc03b927a8e6f047be2a0b56c6807e67be5beef",
+    "other": "Der Paketname enthält ein ungültiges Zeichen"
+  },
+  "Error.PackageNameMissing": {
+    "description": "Error shown when an update package has no name.",
+    "hash": "sha1-1d4001e8a070d44d6fc0701a050c1b67a091019a",
+    "other": "Der Paketname fehlt"
+  },
+  "Error.WriteUpgradeCommand": {
+    "description": "Error prefix when the temporary update command cannot be written.",
+    "hash": "sha1-301cdd28ac9082cf04426dff5b975b418bc5c7d4",
+    "other": "Der Update-Befehl konnte nicht geschrieben werden"
+  },
+  "Notification.PackageWithVersion": {
+    "description": "Notification body for one package with its available target version.",
+    "hash": "sha1-5b6852271b994510be1819f95df8d90b3e5810d7",
+    "other": "{{.Name}} kann auf {{.Version}} aktualisiert werden."
+  },
+  "Notification.PackageWithoutVersion": {
+    "description": "Notification body for one package when no target version is known.",
+    "hash": "sha1-ab1a6499f17323ef4d33acae8b2c61560edc7d32",
+    "other": "Für {{.Name}} ist eine neue Version verfügbar."
+  },
+  "Notification.Packages": {
+    "description": "Notification body listing all newly available package names.",
+    "hash": "sha1-ad4015fc4f75a5e1bcaf568d183ce85fd69ede56",
+    "other": "Neu verfügbar für: {{.Names}}."
+  },
+  "Notification.PackagesWithMore": {
+    "description": "Notification body listing three package names and a count of additional packages.",
+    "hash": "sha1-7b1f73cf8720d660e2be59384fb66670f6f881c2",
+    "one": "Neu verfügbar für: {{.Names}} und {{.Count}} weiteres Update.",
+    "other": "Neu verfügbar für: {{.Names}} und {{.Count}} weitere Updates."
+  },
+  "Notification.UpdateTitle": {
+    "description": "Notification title when one new Homebrew update is available.",
+    "hash": "sha1-e7715e2205430175c517c92f40ee25d03ebd9efc",
+    "other": "Homebrew-Update verfügbar"
+  },
+  "Notification.UpdatesTitle": {
+    "description": "Notification title containing the number of newly available Homebrew updates.",
+    "hash": "sha1-2bc1f67a04000439e201378997517a535a5e514a",
+    "one": "{{.Count}} neues Homebrew-Update",
+    "other": "{{.Count}} neue Homebrew-Updates"
+  },
+  "Tray.AutostartApprovalTitle": {
+    "description": "Launch at login menu title when macOS approval is required.",
+    "hash": "sha1-6cf886af16c325a72f131c7272a4a39f0d36a0be",
+    "other": "Bei Anmeldung starten (Freigabe erforderlich)"
+  },
+  "Tray.AutostartApprovalTooltip": {
+    "description": "Tooltip explaining that launch at login must be approved in macOS.",
+    "hash": "sha1-c4e8fec288b71d2a5c1fed9bbc4fee4e8d0e9c31",
+    "other": "Brewtifyer in den macOS-Systemeinstellungen freigeben"
+  },
+  "Tray.AutostartDisableTooltip": {
+    "description": "Tooltip when launch at login can be disabled.",
+    "hash": "sha1-c47bf59890d7e0c8ffc1ff5e22b7266aed9ff5cf",
+    "other": "Autostart für Brewtifyer deaktivieren"
+  },
+  "Tray.AutostartEnableTooltip": {
+    "description": "Tooltip when launch at login can be enabled.",
+    "hash": "sha1-16b64ca81d0055aef108c77c9076e9888dbe14bf",
+    "other": "Brewtifyer automatisch nach der Anmeldung starten"
+  },
+  "Tray.AutostartManageFailed": {
+    "description": "Status shown when launch at login could not be changed.",
+    "hash": "sha1-e38fe5ee95d8c69d7169b20043ad43807cc8097f",
+    "other": "Autostart konnte nicht geändert werden"
+  },
+  "Tray.AutostartRegisterTooltip": {
+    "description": "Tooltip when Brewtifyer can be registered as a login item.",
+    "hash": "sha1-6bb9c9fc45cc5f29709e4e1b4de55e07e61e86a1",
+    "other": "Brewtifyer als Anmeldeobjekt registrieren"
+  },
+  "Tray.AutostartTitle": {
+    "description": "Menu checkbox for launching Brewtifyer when the user logs in.",
+    "hash": "sha1-7b3fed49030bf6acf63056e9d7a6ae6bea691308",
+    "other": "Bei Anmeldung starten"
+  },
+  "Tray.AutostartUnsupportedTitle": {
+    "description": "Launch at login menu title on unsupported macOS versions.",
+    "hash": "sha1-13108a8b3ea2e113f4a0365134e0c0ff9689f405",
+    "other": "Bei Anmeldung starten (ab macOS 13)"
+  },
+  "Tray.AutostartUnsupportedTooltip": {
+    "description": "Tooltip explaining the minimum macOS version for launch at login.",
+    "hash": "sha1-9bfce7f0732d64a2eacdc8009ad705b7bce77910",
+    "other": "Diese Funktion benötigt macOS 13 oder neuer"
+  },
+  "Tray.CheckFailed": {
+    "description": "Status shown when checking Homebrew failed.",
+    "hash": "sha1-a7330562de7b5933da0e2c2cade2193485c90c3f",
+    "other": "Fehler bei der Prüfung"
+  },
+  "Tray.Checking": {
+    "description": "Status shown while Homebrew is being checked.",
+    "hash": "sha1-8892ac236a5b9ab006f9703ad6b0e1527fdb4597",
+    "other": "Homebrew wird geprüft …"
+  },
+  "Tray.CurrentStatusTooltip": {
+    "description": "Tooltip for the current Homebrew status row.",
+    "hash": "sha1-b365d030bffbb913cc280f81aff8a5f132735ccd",
+    "other": "Aktueller Homebrew-Status"
+  },
+  "Tray.LastCheckTooltip": {
+    "description": "Tooltip for the time of the last Homebrew check.",
+    "hash": "sha1-3c1a974dbc6961ae21fe94ae1d3ac7478f18a0af",
+    "other": "Zeitpunkt der letzten Prüfung"
+  },
+  "Tray.LastChecked": {
+    "description": "Status containing the localized time of the last successful check.",
+    "hash": "sha1-910597f0c1ef70815da30963ca862b78b58e0159",
+    "other": "Zuletzt geprüft: {{.Date}}"
+  },
+  "Tray.LastCheckedWithWarning": {
+    "description": "Status containing the last check time when the result includes a warning.",
+    "hash": "sha1-fdc8e489f188f323ce33d8c6019039be5f16fe45",
+    "other": "Zuletzt geprüft: {{.Date}} (mit Warnung)"
+  },
+  "Tray.LastSuccessfulCheckTooltip": {
+    "description": "Tooltip for a successful Homebrew check.",
+    "hash": "sha1-4d7a221f8cd219b6cf9f23f7fbed5da83d19a7b0",
+    "other": "Zeitpunkt der letzten erfolgreichen Prüfung"
+  },
+  "Tray.MoreUpdates": {
+    "description": "Number of additional updates hidden because the menu shows at most ten packages.",
+    "hash": "sha1-8961e2466b2832240208984cec3ca29b2ab548d4",
+    "one": "… und {{.Count}} weiteres Update",
+    "other": "… und {{.Count}} weitere Updates"
+  },
+  "Tray.NotChecked": {
+    "description": "Status before Homebrew has been checked for the first time.",
+    "hash": "sha1-f903d5f41189a6b7d743d51e882cc97462dbc95a",
+    "other": "Noch nicht geprüft"
+  },
+  "Tray.OpenLoginItems": {
+    "description": "Menu action that opens the macOS Login Items settings.",
+    "hash": "sha1-3a589e7e7cd21908c3c0c60dd1f8b97f95d59de4",
+    "other": "Anmeldeobjekte in Systemeinstellungen öffnen …"
+  },
+  "Tray.OpenLoginItemsTooltip": {
+    "description": "Tooltip for opening Login Items settings to approve Brewtifyer.",
+    "hash": "sha1-41dadc329c8674ecbea1c68453b63cdb798a5ae6",
+    "other": "Autostart für Brewtifyer in macOS freigeben"
+  },
+  "Tray.PackageTitle": {
+    "description": "Package row containing its name, installed version, and available version.",
+    "hash": "sha1-de178345f0e86b811692b2c2ebbb0a4f4345cb1b",
+    "other": "{{.Name}}: {{.Installed}} → {{.Current}}"
+  },
+  "Tray.PackageUpgradeTooltip": {
+    "description": "Tooltip for upgrading one package in Terminal.",
+    "hash": "sha1-efb473dee9327fc308e00804553a481090175658",
+    "other": "Dieses Paket im Terminal aktualisieren"
+  },
+  "Tray.PinnedPackageTitle": {
+    "description": "Package row for a pinned package.",
+    "hash": "sha1-f7f328d16d7a12ec1a86cc085b613288eadd6b25",
+    "other": "{{.Name}}: {{.Installed}} → {{.Current}} · angeheftet"
+  },
+  "Tray.PinnedPackageTooltip": {
+    "description": "Tooltip explaining how Homebrew handles a pinned package during an upgrade.",
+    "hash": "sha1-216d51e1ae230b81cfb2a2de6d803b7f8b6da236",
+    "other": "Im Terminal öffnen; Homebrew überspringt angeheftete Pakete"
+  },
+  "Tray.Quit": {
+    "description": "Menu action that quits Brewtifyer.",
+    "hash": "sha1-f16ba30b5dca05b3ff856745b7d17444ba4e3264",
+    "other": "Beenden"
+  },
+  "Tray.QuitTooltip": {
+    "description": "Tooltip for the quit action.",
+    "hash": "sha1-e8bdd6d52edee03af3b787f1c3746a12796a1c18",
+    "other": "Brewtifyer beenden"
+  },
+  "Tray.Refresh": {
+    "description": "Menu action that checks Homebrew immediately.",
+    "hash": "sha1-f65e125905a7ef0090526bf6178ba1574ffcc0d5",
+    "other": "Jetzt prüfen"
+  },
+  "Tray.RefreshTooltip": {
+    "description": "Tooltip for the immediate Homebrew check action.",
+    "hash": "sha1-fe9303428111ce1dfee23b8b9459e31a7b91a2ee",
+    "other": "Homebrew sofort auf Updates prüfen"
+  },
+  "Tray.Tooltip": {
+    "description": "Tooltip for the Brewtifyer menu bar icon.",
+    "hash": "sha1-7d435f02186fa10d57837506a75f24cb6f53d3f4",
+    "other": "Brewtifyer – Homebrew-Updates"
+  },
+  "Tray.UpToDate": {
+    "description": "Status shown when no Homebrew updates are available.",
+    "hash": "sha1-15277f9a5279eee28fba400ec6549fe89debcfb6",
+    "other": "Homebrew ist aktuell"
+  },
+  "Tray.UpdatesAvailable": {
+    "description": "Homebrew status containing the number of available updates.",
+    "hash": "sha1-ec78696d34985ed4ce80a3982d2b2f0c3bc077ba",
+    "one": "{{.Count}} Update verfügbar",
+    "other": "{{.Count}} Updates verfügbar"
+  },
+  "Tray.UpgradeAll": {
+    "description": "Menu action that installs all available Homebrew updates.",
+    "hash": "sha1-d8117974058cb0b29b85e17e5fb0dcfe78196354",
+    "other": "Alle Updates installieren …"
+  },
+  "Tray.UpgradeAllRunning": {
+    "description": "Status after all upgrades were opened in Terminal.",
+    "hash": "sha1-e4e703fd1cc91877038799f17450d43b7dbd5291",
+    "other": "Updates laufen im Terminal …"
+  },
+  "Tray.UpgradeAllTooltip": {
+    "description": "Tooltip for the action that runs brew upgrade.",
+    "hash": "sha1-e99806c7d5aa03ed4d598ae18b69765e85430065",
+    "other": "brew upgrade im Terminal ausführen"
+  },
+  "Tray.UpgradeLaunchFailed": {
+    "description": "Status shown when the update Terminal could not be opened.",
+    "hash": "sha1-827285811cbeffc808995a8fc4e082e36ef9b7d8",
+    "other": "Das Update-Terminal konnte nicht geöffnet werden"
+  },
+  "Tray.UpgradePackageMenuTooltip": {
+    "description": "Initial tooltip for package update menu entries.",
+    "hash": "sha1-72ec8f2694182a47a00f377bc109875fbc6bcea0",
+    "other": "Im Terminal aktualisieren"
+  },
+  "Tray.UpgradePackageRunning": {
+    "description": "Status after an individual upgrade was opened in Terminal.",
+    "hash": "sha1-c39b01e4d813a72583b2dad523391a63031233c0",
+    "other": "Update läuft im Terminal …"
+  },
+  "Upgrade.AllDescription": {
+    "description": "Heading in Terminal when all packages are being upgraded.",
+    "hash": "sha1-fec8f4353fe8b3a731a128d9b66165fc368b2a46",
+    "other": "Alle Homebrew-Updates"
+  },
+  "Upgrade.Completed": {
+    "description": "Terminal message after Homebrew finished successfully.",
+    "hash": "sha1-08ac05266c8415ae996631247c5be56823477eb2",
+    "other": "Update abgeschlossen. Prüfe Brewtifyer anschließend erneut."
+  },
+  "Upgrade.Failed": {
+    "description": "Terminal printf format after Homebrew exited unsuccessfully; %d is replaced by the exit status.",
+    "hash": "sha1-bd468ffe53e33bdaaf28fae6663388d510d024eb",
+    "other": "Update mit Status %d beendet."
+  },
+  "Upgrade.PackageDescription": {
+    "description": "Heading in Terminal when one package is being upgraded.",
+    "hash": "sha1-7c21819b34504f13eb3dae5a98feb00cd8d62fdb",
+    "other": "Homebrew-Update für {{.Name}}"
+  },
+  "Upgrade.PressAnyKey": {
+    "description": "Terminal prompt shown before the update window closes.",
+    "hash": "sha1-066172371ce15637fc2cbeb04b480748c003f20d",
+    "other": "Zum Schließen des Fensters eine Taste drücken …"
+  }
+}

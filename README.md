@@ -20,6 +20,8 @@ Native macOS integrations are kept small and focused.
 - Remembers notification state across restarts to avoid duplicates.
 - Provides a manual refresh without allowing overlapping checks.
 - Supports native launch at login on macOS 13 and later.
+- Uses the operating system language with complete English and German menus,
+  notifications, and interactive update messages.
 
 ## Installation
 
@@ -87,6 +89,7 @@ The project intentionally uses shell scripts instead of a Makefile:
 
 ```sh
 ./Build/format.sh
+./Build/localization.sh
 ./Build/test.sh
 ./Build/vet.sh
 ./Build/run.sh
@@ -100,6 +103,8 @@ The main packages are organized by responsibility:
 - `internal/notification` provides native notifications and deduplication.
 - `internal/autostart` manages the native macOS login item.
 - `internal/upgrade` opens interactive Homebrew upgrades in Terminal.
+- `internal/localization` owns language detection, embedded message catalogs,
+  pluralization, and localized date formatting.
 
 The application and menu bar icons can be regenerated with:
 
@@ -107,6 +112,32 @@ The application and menu bar icons can be regenerated with:
 ./Build/generate-icons.sh
 ./Build/generate-menu-bar-icon.sh
 ```
+
+## Localization
+
+English is Brewtifyer's source and fallback language. German is maintained in
+the embedded JSON catalogs under `internal/localization/locales`.
+
+User-facing messages are defined as typed methods in `internal/localization`.
+After adding or changing a message, use the pinned `goi18n` tool to extract the
+English catalog and merge the German translation:
+
+```sh
+go tool goi18n extract -sourceLanguage en -format json \
+  -outdir internal/localization/locales internal/localization
+go tool goi18n merge -sourceLanguage en -format json \
+  -outdir internal/localization/locales \
+  internal/localization/locales/active.en.json \
+  internal/localization/locales/active.de.json
+```
+
+Translate every entry written to `translate.de.json`, merge it again, and
+commit the resulting `active.de.json`. The temporary translation file can then
+be removed. Run `./Build/localization.sh` to verify that both committed
+catalogs are complete and match the Go source.
+
+At runtime, `BREWTIFYER_LANGUAGE` can override the operating system language,
+for example `BREWTIFYER_LANGUAGE=en` or `BREWTIFYER_LANGUAGE=de`.
 
 ## Creating a Release
 

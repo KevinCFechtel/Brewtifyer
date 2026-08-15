@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
+	"github.com/KevinCFechtel/Brewtifyer/internal/localization"
 )
 
 type sentMessage struct {
@@ -27,7 +28,7 @@ func TestServiceDeduplicatesAcrossRestarts(t *testing.T) {
 
 	statePath := filepath.Join(t.TempDir(), "Brewtifyer", "notification-state.json")
 	sender := &recordingSender{}
-	service := NewService(statePath, sender)
+	service := NewService(statePath, sender, localization.MustNew("de"))
 	updates := resultWith(packageUpdate("go", brew.Formula, "1.26.6"))
 
 	if err := service.Handle(updates); err != nil {
@@ -37,7 +38,7 @@ func TestServiceDeduplicatesAcrossRestarts(t *testing.T) {
 		t.Fatalf("handle duplicate result: %v", err)
 	}
 
-	restartedService := NewService(statePath, sender)
+	restartedService := NewService(statePath, sender, localization.MustNew("de"))
 	if err := restartedService.Handle(updates); err != nil {
 		t.Fatalf("handle result after restart: %v", err)
 	}
@@ -51,7 +52,7 @@ func TestServiceOnlyNotifiesAboutNewUpdates(t *testing.T) {
 
 	statePath := filepath.Join(t.TempDir(), "notification-state.json")
 	sender := &recordingSender{}
-	service := NewService(statePath, sender)
+	service := NewService(statePath, sender, localization.MustNew("de"))
 	goUpdate := packageUpdate("go", brew.Formula, "1.26.6")
 	nodeUpdate := packageUpdate("node", brew.Formula, "25.0.0")
 
@@ -84,7 +85,7 @@ func TestServiceTreatsNewTargetVersionAsNewUpdate(t *testing.T) {
 
 	statePath := filepath.Join(t.TempDir(), "notification-state.json")
 	sender := &recordingSender{}
-	service := NewService(statePath, sender)
+	service := NewService(statePath, sender, localization.MustNew("de"))
 
 	if err := service.Handle(resultWith(packageUpdate("go", brew.Formula, "1.26.6"))); err != nil {
 		t.Fatalf("handle first version: %v", err)
@@ -106,7 +107,7 @@ func TestServiceNotifiesWhenUpdateReappears(t *testing.T) {
 
 	statePath := filepath.Join(t.TempDir(), "notification-state.json")
 	sender := &recordingSender{}
-	service := NewService(statePath, sender)
+	service := NewService(statePath, sender, localization.MustNew("de"))
 	updates := resultWith(packageUpdate("go", brew.Formula, "1.26.6"))
 
 	if err := service.Handle(updates); err != nil {
@@ -128,7 +129,7 @@ func TestServicePersistsStatePrivately(t *testing.T) {
 	t.Parallel()
 
 	statePath := filepath.Join(t.TempDir(), "Brewtifyer", "notification-state.json")
-	service := NewService(statePath, &recordingSender{})
+	service := NewService(statePath, &recordingSender{}, localization.MustNew("de"))
 	if err := service.Handle(resultWith(packageUpdate("go", brew.Formula, "1.26.6"))); err != nil {
 		t.Fatalf("handle result: %v", err)
 	}
@@ -151,7 +152,7 @@ func TestServiceDoesNotOverwriteInvalidState(t *testing.T) {
 		t.Fatalf("write invalid state: %v", err)
 	}
 	sender := &recordingSender{}
-	service := NewService(statePath, sender)
+	service := NewService(statePath, sender, localization.MustNew("de"))
 
 	if err := service.Handle(resultWith(packageUpdate("go", brew.Formula, "1.26.6"))); err == nil {
 		t.Fatal("Handle() error = nil, want invalid state error")
@@ -177,11 +178,26 @@ func TestPluralMessageListsAtMostThreePackages(t *testing.T) {
 		packageUpdate("rust", brew.Formula, "3"),
 		packageUpdate("firefox", brew.Cask, "4"),
 	}
-	title, body := message(packages)
+	title, body := message(localization.MustNew("de"), packages)
 	if title != "4 neue Homebrew-Updates" {
 		t.Fatalf("title = %q", title)
 	}
-	if body != "Neu verfügbar für: go, node, rust und 1 weitere." {
+	if body != "Neu verfügbar für: go, node, rust und 1 weiteres Update." {
+		t.Fatalf("body = %q", body)
+	}
+}
+
+func TestMessageUsesSelectedLanguage(t *testing.T) {
+	t.Parallel()
+
+	title, body := message(localization.MustNew("en"), []brew.Package{
+		packageUpdate("go", brew.Formula, "1.26.6"),
+		packageUpdate("node", brew.Formula, "25.0.0"),
+	})
+	if title != "2 new Homebrew updates" {
+		t.Fatalf("title = %q", title)
+	}
+	if body != "Newly available for: go, node." {
 		t.Fatalf("body = %q", body)
 	}
 }

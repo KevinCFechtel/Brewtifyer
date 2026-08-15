@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
+	"github.com/KevinCFechtel/Brewtifyer/internal/localization"
 )
 
 const stateVersion = 1
@@ -26,6 +27,7 @@ type Sender interface {
 type Service struct {
 	statePath string
 	sender    Sender
+	texts     *localization.Strings
 	mutex     sync.Mutex
 }
 
@@ -40,17 +42,18 @@ type packageState struct {
 	Version string    `json:"version"`
 }
 
-func NewService(statePath string, sender Sender) *Service {
+func NewService(statePath string, sender Sender, texts *localization.Strings) *Service {
 	return &Service{
 		statePath: statePath,
 		sender:    sender,
+		texts:     texts,
 	}
 }
 
 func DefaultStatePath() (string, error) {
 	configurationDirectory, err := os.UserConfigDir()
 	if err != nil {
-		return "", fmt.Errorf("Application-Support-Verzeichnis konnte nicht ermittelt werden: %w", err)
+		return "", fmt.Errorf("user configuration directory could not be determined: %w", err)
 	}
 	return filepath.Join(configurationDirectory, "Brewtifyer", "notification-state.json"), nil
 }
@@ -78,7 +81,7 @@ func (service *Service) Handle(result brew.Result) error {
 	}
 
 	if len(newPackages) > 0 && service.sender != nil {
-		title, body := message(newPackages)
+		title, body := message(service.texts, newPackages)
 		service.sender.Send(title, body)
 	}
 	return nil
@@ -90,20 +93,20 @@ func loadState(statePath string) (state, error) {
 		return state{Version: stateVersion}, nil
 	}
 	if err != nil {
-		return state{}, fmt.Errorf("Benachrichtigungszustand konnte nicht geöffnet werden: %w", err)
+		return state{}, fmt.Errorf("notification state could not be opened: %w", err)
 	}
 	defer file.Close()
 
 	var saved state
 	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&saved); err != nil {
-		return state{}, fmt.Errorf("Benachrichtigungszustand konnte nicht gelesen werden: %w", err)
+		return state{}, fmt.Errorf("notification state could not be read: %w", err)
 	}
 	if err := ensureJSONEnd(decoder); err != nil {
 		return state{}, err
 	}
 	if saved.Version != stateVersion {
-		return state{}, fmt.Errorf("unbekannte Version des Benachrichtigungszustands: %d", saved.Version)
+		return state{}, fmt.Errorf("unknown notification state version: %d", saved.Version)
 	}
 	sortPackageStates(saved.Packages)
 	return saved, nil
@@ -114,20 +117,20 @@ func ensureJSONEnd(decoder *json.Decoder) error {
 	if err := decoder.Decode(&extra); errors.Is(err, io.EOF) {
 		return nil
 	} else if err != nil {
-		return fmt.Errorf("Benachrichtigungszustand konnte nicht vollständig gelesen werden: %w", err)
+		return fmt.Errorf("notification state could not be read completely: %w", err)
 	}
-	return errors.New("Benachrichtigungszustand enthält zusätzliche Daten")
+	return errors.New("notification state contains additional data")
 }
 
 func saveState(statePath string, current state) error {
 	directory := filepath.Dir(statePath)
 	if err := os.MkdirAll(directory, 0o700); err != nil {
-		return fmt.Errorf("Verzeichnis für Benachrichtigungszustand konnte nicht erstellt werden: %w", err)
+		return fmt.Errorf("notification state directory could not be created: %w", err)
 	}
 
 	temporary, err := os.CreateTemp(directory, ".notification-state-*")
 	if err != nil {
-		return fmt.Errorf("temporärer Benachrichtigungszustand konnte nicht erstellt werden: %w", err)
+		return fmt.Errorf("temporary notification state could not be created: %w", err)
 	}
 	temporaryPath := temporary.Name()
 	removeTemporary := true
@@ -141,17 +144,17 @@ func saveState(statePath string, current state) error {
 	encoder.SetIndent("", "  ")
 	if err := encoder.Encode(current); err != nil {
 		_ = temporary.Close()
-		return fmt.Errorf("Benachrichtigungszustand konnte nicht geschrieben werden: %w", err)
+		return fmt.Errorf("notification state could not be written: %w", err)
 	}
 	if err := temporary.Sync(); err != nil {
 		_ = temporary.Close()
-		return fmt.Errorf("Benachrichtigungszustand konnte nicht synchronisiert werden: %w", err)
+		return fmt.Errorf("notification state could not be synchronized: %w", err)
 	}
 	if err := temporary.Close(); err != nil {
-		return fmt.Errorf("Benachrichtigungszustand konnte nicht geschlossen werden: %w", err)
+		return fmt.Errorf("notification state could not be closed: %w", err)
 	}
 	if err := os.Rename(temporaryPath, statePath); err != nil {
-		return fmt.Errorf("Benachrichtigungszustand konnte nicht gespeichert werden: %w", err)
+		return fmt.Errorf("notification state could not be saved: %w", err)
 	}
 	removeTemporary = false
 	return nil
@@ -223,17 +226,16 @@ func (recorded packageState) key() string {
 	return string(recorded.Kind) + "\x00" + recorded.Name + "\x00" + recorded.Version
 }
 
-func message(packages []brew.Package) (string, string) {
+func message(texts *localization.Strings, packages []brew.Package) (string, string) {
 	if len(packages) == 1 {
 		currentPackage := packages[0]
-		title := "Homebrew-Update verfügbar"
-		if currentPackage.CurrentVersion == "" {
-			return title, fmt.Sprintf("Für %s ist eine neue Version verfügbar.", currentPackage.Name)
-		}
-		return title, fmt.Sprintf("%s kann auf %s aktualisiert werden.", currentPackage.Name, currentPackage.CurrentVersion)
+		return texts.NotificationUpdateTitle(), texts.NotificationPackage(
+			currentPackage.Name,
+			currentPackage.CurrentVersion,
+		)
 	}
 
-	title := fmt.Sprintf("%d neue Homebrew-Updates", len(packages))
+	title := texts.NotificationUpdatesTitle(len(packages))
 	visibleNames := make([]string, 0, 3)
 	for index, currentPackage := range packages {
 		if index == 3 {
@@ -241,9 +243,6 @@ func message(packages []brew.Package) (string, string) {
 		}
 		visibleNames = append(visibleNames, currentPackage.Name)
 	}
-	body := "Neu verfügbar für: " + strings.Join(visibleNames, ", ")
-	if remaining := len(packages) - len(visibleNames); remaining > 0 {
-		body += fmt.Sprintf(" und %d weitere", remaining)
-	}
-	return title, body + "."
+	remaining := len(packages) - len(visibleNames)
+	return title, texts.NotificationPackages(strings.Join(visibleNames, ", "), remaining)
 }

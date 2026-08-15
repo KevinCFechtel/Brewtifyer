@@ -1,0 +1,234 @@
+{
+  "Error.CloseUpgradeCommand": {
+    "description": "Error prefix when the temporary update command cannot be closed.",
+    "other": "The update command could not be closed"
+  },
+  "Error.CreateUpgradeCommand": {
+    "description": "Error prefix when the temporary update command cannot be created.",
+    "other": "The temporary update command could not be created"
+  },
+  "Error.HomebrewNotFound": {
+    "description": "Error shown when no Homebrew executable can be found.",
+    "other": "Homebrew was not found"
+  },
+  "Error.MakeUpgradeCommandExecutable": {
+    "description": "Error prefix when the temporary update command cannot be made executable.",
+    "other": "The update command could not be made executable"
+  },
+  "Error.OpenTerminal": {
+    "description": "Error prefix when Terminal cannot be opened.",
+    "other": "Terminal could not be opened"
+  },
+  "Error.PackageKindUnknown": {
+    "description": "Error shown when an update package has an unknown kind.",
+    "other": "Unknown package type: {{.Kind}}"
+  },
+  "Error.PackageNameInvalid": {
+    "description": "Error shown when a package name contains an invalid null character.",
+    "other": "Package name contains an invalid character"
+  },
+  "Error.PackageNameMissing": {
+    "description": "Error shown when an update package has no name.",
+    "other": "Package name is missing"
+  },
+  "Error.WriteUpgradeCommand": {
+    "description": "Error prefix when the temporary update command cannot be written.",
+    "other": "The update command could not be written"
+  },
+  "Notification.PackageWithVersion": {
+    "description": "Notification body for one package with its available target version.",
+    "other": "{{.Name}} can be updated to {{.Version}}."
+  },
+  "Notification.PackageWithoutVersion": {
+    "description": "Notification body for one package when no target version is known.",
+    "other": "A new version is available for {{.Name}}."
+  },
+  "Notification.Packages": {
+    "description": "Notification body listing all newly available package names.",
+    "other": "Newly available for: {{.Names}}."
+  },
+  "Notification.PackagesWithMore": {
+    "description": "Notification body listing three package names and a count of additional packages.",
+    "one": "Newly available for: {{.Names}}, and {{.Count}} more update.",
+    "other": "Newly available for: {{.Names}}, and {{.Count}} more updates."
+  },
+  "Notification.UpdateTitle": {
+    "description": "Notification title when one new Homebrew update is available.",
+    "other": "Homebrew update available"
+  },
+  "Notification.UpdatesTitle": {
+    "description": "Notification title containing the number of newly available Homebrew updates.",
+    "one": "{{.Count}} new Homebrew update",
+    "other": "{{.Count}} new Homebrew updates"
+  },
+  "Tray.AutostartApprovalTitle": {
+    "description": "Launch at login menu title when macOS approval is required.",
+    "other": "Launch at login (approval required)"
+  },
+  "Tray.AutostartApprovalTooltip": {
+    "description": "Tooltip explaining that launch at login must be approved in macOS.",
+    "other": "Allow Brewtifyer in macOS System Settings"
+  },
+  "Tray.AutostartDisableTooltip": {
+    "description": "Tooltip when launch at login can be disabled.",
+    "other": "Disable launch at login for Brewtifyer"
+  },
+  "Tray.AutostartEnableTooltip": {
+    "description": "Tooltip when launch at login can be enabled.",
+    "other": "Launch Brewtifyer automatically after login"
+  },
+  "Tray.AutostartManageFailed": {
+    "description": "Status shown when launch at login could not be changed.",
+    "other": "Launch at login could not be changed"
+  },
+  "Tray.AutostartRegisterTooltip": {
+    "description": "Tooltip when Brewtifyer can be registered as a login item.",
+    "other": "Register Brewtifyer as a login item"
+  },
+  "Tray.AutostartTitle": {
+    "description": "Menu checkbox for launching Brewtifyer when the user logs in.",
+    "other": "Launch at login"
+  },
+  "Tray.AutostartUnsupportedTitle": {
+    "description": "Launch at login menu title on unsupported macOS versions.",
+    "other": "Launch at login (macOS 13 or later)"
+  },
+  "Tray.AutostartUnsupportedTooltip": {
+    "description": "Tooltip explaining the minimum macOS version for launch at login.",
+    "other": "This feature requires macOS 13 or later"
+  },
+  "Tray.CheckFailed": {
+    "description": "Status shown when checking Homebrew failed.",
+    "other": "Check failed"
+  },
+  "Tray.Checking": {
+    "description": "Status shown while Homebrew is being checked.",
+    "other": "Checking Homebrew …"
+  },
+  "Tray.CurrentStatusTooltip": {
+    "description": "Tooltip for the current Homebrew status row.",
+    "other": "Current Homebrew status"
+  },
+  "Tray.LastCheckTooltip": {
+    "description": "Tooltip for the time of the last Homebrew check.",
+    "other": "Time of the last check"
+  },
+  "Tray.LastChecked": {
+    "description": "Status containing the localized time of the last successful check.",
+    "other": "Last checked: {{.Date}}"
+  },
+  "Tray.LastCheckedWithWarning": {
+    "description": "Status containing the last check time when the result includes a warning.",
+    "other": "Last checked: {{.Date}} (with warning)"
+  },
+  "Tray.LastSuccessfulCheckTooltip": {
+    "description": "Tooltip for a successful Homebrew check.",
+    "other": "Time of the last successful check"
+  },
+  "Tray.MoreUpdates": {
+    "description": "Number of additional updates hidden because the menu shows at most ten packages.",
+    "one": "… and {{.Count}} more update",
+    "other": "… and {{.Count}} more updates"
+  },
+  "Tray.NotChecked": {
+    "description": "Status before Homebrew has been checked for the first time.",
+    "other": "Not checked yet"
+  },
+  "Tray.OpenLoginItems": {
+    "description": "Menu action that opens the macOS Login Items settings.",
+    "other": "Open Login Items in System Settings …"
+  },
+  "Tray.OpenLoginItemsTooltip": {
+    "description": "Tooltip for opening Login Items settings to approve Brewtifyer.",
+    "other": "Allow Brewtifyer to launch at login in macOS"
+  },
+  "Tray.PackageTitle": {
+    "description": "Package row containing its name, installed version, and available version.",
+    "other": "{{.Name}}: {{.Installed}} → {{.Current}}"
+  },
+  "Tray.PackageUpgradeTooltip": {
+    "description": "Tooltip for upgrading one package in Terminal.",
+    "other": "Update this package in Terminal"
+  },
+  "Tray.PinnedPackageTitle": {
+    "description": "Package row for a pinned package.",
+    "other": "{{.Name}}: {{.Installed}} → {{.Current}} · pinned"
+  },
+  "Tray.PinnedPackageTooltip": {
+    "description": "Tooltip explaining how Homebrew handles a pinned package during an upgrade.",
+    "other": "Open in Terminal; Homebrew skips pinned packages"
+  },
+  "Tray.Quit": {
+    "description": "Menu action that quits Brewtifyer.",
+    "other": "Quit"
+  },
+  "Tray.QuitTooltip": {
+    "description": "Tooltip for the quit action.",
+    "other": "Quit Brewtifyer"
+  },
+  "Tray.Refresh": {
+    "description": "Menu action that checks Homebrew immediately.",
+    "other": "Check now"
+  },
+  "Tray.RefreshTooltip": {
+    "description": "Tooltip for the immediate Homebrew check action.",
+    "other": "Check Homebrew for updates now"
+  },
+  "Tray.Tooltip": {
+    "description": "Tooltip for the Brewtifyer menu bar icon.",
+    "other": "Brewtifyer – Homebrew updates"
+  },
+  "Tray.UpToDate": {
+    "description": "Status shown when no Homebrew updates are available.",
+    "other": "Homebrew is up to date"
+  },
+  "Tray.UpdatesAvailable": {
+    "description": "Homebrew status containing the number of available updates.",
+    "one": "{{.Count}} update available",
+    "other": "{{.Count}} updates available"
+  },
+  "Tray.UpgradeAll": {
+    "description": "Menu action that installs all available Homebrew updates.",
+    "other": "Install all updates …"
+  },
+  "Tray.UpgradeAllRunning": {
+    "description": "Status after all upgrades were opened in Terminal.",
+    "other": "Updates are running in Terminal …"
+  },
+  "Tray.UpgradeAllTooltip": {
+    "description": "Tooltip for the action that runs brew upgrade.",
+    "other": "Run brew upgrade in Terminal"
+  },
+  "Tray.UpgradeLaunchFailed": {
+    "description": "Status shown when the update Terminal could not be opened.",
+    "other": "The update Terminal could not be opened"
+  },
+  "Tray.UpgradePackageMenuTooltip": {
+    "description": "Initial tooltip for package update menu entries.",
+    "other": "Update in Terminal"
+  },
+  "Tray.UpgradePackageRunning": {
+    "description": "Status after an individual upgrade was opened in Terminal.",
+    "other": "Update is running in Terminal …"
+  },
+  "Upgrade.AllDescription": {
+    "description": "Heading in Terminal when all packages are being upgraded.",
+    "other": "All Homebrew updates"
+  },
+  "Upgrade.Completed": {
+    "description": "Terminal message after Homebrew finished successfully.",
+    "other": "Update completed. Check Brewtifyer again afterwards."
+  },
+  "Upgrade.Failed": {
+    "description": "Terminal printf format after Homebrew exited unsuccessfully; %d is replaced by the exit status.",
+    "other": "Update exited with status %d."
+  },
+  "Upgrade.PackageDescription": {
+    "description": "Heading in Terminal when one package is being upgraded.",
+    "other": "Homebrew update for {{.Name}}"
+  },
+  "Upgrade.PressAnyKey": {
+    "description": "Terminal prompt shown before the update window closes.",
+    "other": "Press any key to close the window …"
+  }
+}

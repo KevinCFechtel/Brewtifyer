@@ -43,7 +43,7 @@ func (client *Client) Check(ctx context.Context) (Result, error) {
 	output, err := client.runner.Run(outdatedContext, client.path, "outdated", "--json=v2")
 	cancelOutdated()
 	if err != nil {
-		return Result{}, fmt.Errorf("Homebrew-Updates konnten nicht abgefragt werden: %w", err)
+		return Result{}, fmt.Errorf("Homebrew updates could not be queried: %w", err)
 	}
 
 	packages, err := ParseOutdated(strings.NewReader(output.Stdout))
@@ -56,7 +56,7 @@ func (client *Client) Check(ctx context.Context) (Result, error) {
 		CheckedAt: client.now(),
 	}
 	if updateErr != nil {
-		result.Warning = fmt.Sprintf("Homebrew-Metadaten konnten nicht aktualisiert werden: %v", updateErr)
+		result.Warning = fmt.Sprintf("Homebrew metadata could not be updated: %v", updateErr)
 	}
 	return result, nil
 }

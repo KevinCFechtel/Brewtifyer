@@ -19,7 +19,7 @@ func Locate(configuredPath string) (string, error) {
 	if configuredPath != "" {
 		path, err := validateExecutable(configuredPath)
 		if err != nil {
-			return "", fmt.Errorf("konfigurierter Homebrew-Pfad ist ungültig: %w", err)
+			return "", fmt.Errorf("configured Homebrew path is invalid: %w", err)
 		}
 		return path, nil
 	}
@@ -36,7 +36,7 @@ func Locate(configuredPath string) (string, error) {
 		}
 	}
 
-	return "", errors.New("weder im PATH noch an einem Standardpfad gefunden")
+	return "", errors.New("not found in PATH or at a standard location")
 }
 
 func validateExecutable(path string) (string, error) {
@@ -50,10 +50,10 @@ func validateExecutable(path string) (string, error) {
 		return "", err
 	}
 	if info.IsDir() {
-		return "", errors.New("Pfad bezeichnet ein Verzeichnis")
+		return "", errors.New("path points to a directory")
 	}
 	if info.Mode().Perm()&0o111 == 0 {
-		return "", errors.New("Datei ist nicht ausführbar")
+		return "", errors.New("file is not executable")
 	}
 
 	return absolutePath, nil
