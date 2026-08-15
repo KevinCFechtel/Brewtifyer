@@ -1,5 +1,9 @@
 # Brewtifyer
 
+<p align="center">
+  <img src="assets/BrewtifyerIconPreview.png" alt="Brewtifyer app icon" width="192">
+</p>
+
 Brewtifyer is a lightweight, open-source macOS menu bar app that keeps an eye
 on Homebrew and lets you know when formula or cask updates are available.
 
@@ -118,8 +122,10 @@ The application icon uses an Icon Composer source at `assets/AppIcon.icon` for
 the adaptive light, dark, and tinted appearances on current macOS versions.
 `Build/Assets.car` contains the compiled icon, while `Build/AppIcon.icns`
 remains the fallback for older supported macOS versions. Regenerating these
-application icon artifacts requires Xcode 26 or later. The menu bar template
-icon is maintained separately and is not part of the adaptive app icon.
+application icon artifacts requires Xcode 26 or later. The same script also
+updates `assets/BrewtifyerIconPreview.png`, which is displayed at the top of
+this README. The menu bar template icon is maintained separately and is not
+part of the adaptive app icon.
 
 ## Localization
 

@@ -7,9 +7,11 @@ SOURCE_PNG="${REPOSITORY_DIR}/assets/BrewtifyerIcon.png"
 SOURCE_ICON="${REPOSITORY_DIR}/assets/AppIcon.icon"
 OUTPUT_ICNS="${SCRIPT_DIR}/AppIcon.icns"
 OUTPUT_ASSET_CATALOG="${SCRIPT_DIR}/Assets.car"
+OUTPUT_PREVIEW_PNG="${REPOSITORY_DIR}/assets/BrewtifyerIconPreview.png"
 TEMP_DIR="$(mktemp -d /tmp/brewtifyer-icon.XXXXXX)"
 ICONSET_DIR="${TEMP_DIR}/Brewtifyer.iconset"
 ASSET_OUTPUT_DIR="${TEMP_DIR}/asset-catalog"
+ADAPTIVE_ICONSET_DIR="${TEMP_DIR}/AdaptiveAppIcon.iconset"
 PARTIAL_INFO_PLIST="${TEMP_DIR}/asset-catalog-info.plist"
 
 cleanup() {
@@ -51,6 +53,13 @@ xcrun actool "${SOURCE_ICON}" \
   --enable-on-demand-resources NO \
   --output-partial-info-plist "${PARTIAL_INFO_PLIST}"
 
-install -m 0644 "${ASSET_OUTPUT_DIR}/Assets.car" "${OUTPUT_ASSET_CATALOG}"
+iconutil --convert iconset \
+  --output "${ADAPTIVE_ICONSET_DIR}" \
+  "${ASSET_OUTPUT_DIR}/AppIcon.icns"
 
-echo "App-Icons erstellt: ${OUTPUT_ICNS}, ${OUTPUT_ASSET_CATALOG}"
+install -m 0644 "${ASSET_OUTPUT_DIR}/Assets.car" "${OUTPUT_ASSET_CATALOG}"
+install -m 0644 \
+  "${ADAPTIVE_ICONSET_DIR}/icon_128x128@2x.png" \
+  "${OUTPUT_PREVIEW_PNG}"
+
+echo "App-Icons erstellt: ${OUTPUT_ICNS}, ${OUTPUT_ASSET_CATALOG}, ${OUTPUT_PREVIEW_PNG}"
