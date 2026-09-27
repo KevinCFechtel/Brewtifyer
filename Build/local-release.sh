@@ -99,21 +99,39 @@ fail() {
 }
 
 # brew style and brew audit refuse to load a cask that is not in a tap, so the
-# checkout is linked into the Homebrew prefix for the verification and unlinked
-# afterwards. A tap that is already installed is left untouched.
+# working copy is linked into the Homebrew prefix for the verification and
+# unlinked afterwards.
+#
+# Two traps here, both of which have bitten:
+#
+#   * If the tap is already installed as a real clone, that clone is what brew
+#     reads, not the working copy the cask was just generated into. Both checks
+#     then pass without ever looking at the new cask, which makes this gate a
+#     placebo exactly when it matters.
+#   * ln -sfn into an existing directory does not fail; it drops the link
+#     inside it. So the target has to be classified before linking.
+#
+# The cmp at the end is the guarantee: whatever brew is about to read must be
+# the file that was generated.
 link_tap() {
   local taps_dir owner
   taps_dir="$(brew --repository)/Library/Taps"
   owner="${TAP_NAME%%/*}"
   TAP_LINK="${taps_dir}/${owner}/homebrew-${TAP_NAME##*/}"
 
-  if [[ -e "${TAP_LINK}" ]]; then
+  if [[ -L "${TAP_LINK}" || -d "${TAP_LINK}" ]]; then
     TAP_LINK_CREATED="no"
-    return 0
+  else
+    mkdir -p -- "$(dirname -- "${TAP_LINK}")"
+    ln -sfn "$(cd -- "${TAP_DIR}" && pwd)" "${TAP_LINK}"
+    TAP_LINK_CREATED="yes"
   fi
-  mkdir -p -- "$(dirname -- "${TAP_LINK}")"
-  ln -sfn "$(cd -- "${TAP_DIR}" && pwd)" "${TAP_LINK}"
-  TAP_LINK_CREATED="yes"
+
+  if ! cmp -s "${TAP_DIR}/Casks/brewtifyer.rb" "${TAP_LINK}/Casks/brewtifyer.rb"; then
+    fail "brew reads ${TAP_LINK}, which does not hold the cask that was just
+generated. Run 'brew untap ${TAP_NAME}' so that the working copy is used, then
+start again."
+  fi
 }
 
 unlink_tap() {
