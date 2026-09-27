@@ -1,10 +1,19 @@
 name: Release artifacts
 
 # Signing and notarization stay local: Build/release.sh needs the private
-# Developer ID identity and a notarytool keychain profile. This workflow only
-# proves that a tagged commit builds and passes verification, and publishes an
-# unsigned bundle for inspection. The signed, notarized and stapled archive is
-# still produced by Build/release.sh and attached to the release by hand.
+# Developer ID identity and a notarytool keychain profile, which deliberately
+# never reach GitHub.
+#
+# This workflow builds the bundle that the local signing step then consumes, so
+# the shipped binary comes from the tagged commit built on a clean machine
+# rather than from a maintainer's working tree. The archive is attested with
+# GitHub build provenance, which binds these exact bytes to this repository,
+# this workflow and this commit.
+#
+# The attestation covers the UNSIGNED archive. Signing, notarizing and stapling
+# rewrite the bundle afterwards, so the published release asset has a different
+# digest and is not itself attested; Build/local-release.sh records the link
+# between the two in the release notes.
 on:
   push:
     tags: ["v*"]
@@ -16,6 +25,11 @@ permissions:
 jobs:
   verify-tag:
     runs-on: macos-15
+    permissions:
+      contents: read
+      # Required to mint the Sigstore certificate for the attestation.
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -51,8 +65,39 @@ jobs:
             fi
           done
 
+      # upload-artifact does not preserve file permissions, which would strip the
+      # executable bit from Contents/MacOS/Brewtifyer. codesign would sign that
+      # happily and the app would fail to launch. ditto keeps the bundle intact,
+      # and the outer zip that upload-artifact adds does not matter.
+      - name: Archive the app bundle
+        id: archive
+        run: |
+          mkdir -p dist/ci
+          archive="dist/ci/Brewtifyer-${GITHUB_REF_NAME#v}-unsigned.zip"
+          COPYFILE_DISABLE=1 ditto \
+            -c -k \
+            --keepParent \
+            --norsrc \
+            --noextattr \
+            dist/Brewtifyer.app \
+            "${archive}"
+
+          digest="$(shasum -a 256 "${archive}" | awk '{print $1}')"
+          echo "path=${archive}" >>"${GITHUB_OUTPUT}"
+          echo "digest=${digest}" >>"${GITHUB_OUTPUT}"
+          {
+            echo "### Unsigned build"
+            echo
+            echo "SHA-256: \`${digest}\`"
+          } >>"${GITHUB_STEP_SUMMARY}"
+
+      - name: Attest the unsigned build
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: ${{ steps.archive.outputs.path }}
+
       - uses: actions/upload-artifact@v7
         with:
           name: Brewtifyer-${{ github.ref_name }}-unsigned
-          path: dist/Brewtifyer.app
+          path: ${{ steps.archive.outputs.path }}
           retention-days: 14

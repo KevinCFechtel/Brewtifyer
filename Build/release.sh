@@ -17,6 +17,11 @@ if [[ -f "${RELEASE_ENV_FILE}" ]]; then
   set +a
 fi
 
+# BREWTIFYER_PREBUILT_APP adopts an already built bundle instead of building
+# one. Build/local-release.sh points it at the attested archive from the tag's
+# workflow run, which keeps the maintainer's working tree out of the shipped
+# binary. Empty means build locally, which stays the default.
+PREBUILT_APP="${BREWTIFYER_PREBUILT_APP:-}"
 SIGNING_IDENTITY="${SIGNING_IDENTITY:-}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-}"
 SIGNING_TIMESTAMP_URL="${SIGNING_TIMESTAMP_URL:-}"
@@ -122,8 +127,29 @@ verify_bundle_slices() {
   done
 }
 
-echo "1/8 Building the Brewtifyer app"
-BREWTIFYER_ARCHS="${RELEASE_ARCHS}" "${SCRIPT_DIR}/build.sh"
+if [[ -n "${PREBUILT_APP}" ]]; then
+  echo "1/8 Adopting the prebuilt app bundle"
+  if [[ ! -d "${PREBUILT_APP}" ]]; then
+    echo "BREWTIFYER_PREBUILT_APP is not a bundle directory: ${PREBUILT_APP}" >&2
+    exit 1
+  fi
+
+  # The remaining steps all operate on APP_DIR, so a bundle from elsewhere is
+  # copied in. ditto is used rather than cp because it keeps permissions and
+  # the bundle structure intact.
+  PREBUILT_APP="$(cd -- "${PREBUILT_APP}" && pwd)"
+  if [[ "${PREBUILT_APP}" != "${APP_DIR}" ]]; then
+    rm -rf -- "${APP_DIR}"
+    mkdir -p -- "$(dirname -- "${APP_DIR}")"
+    ditto "${PREBUILT_APP}" "${APP_DIR}"
+  fi
+else
+  echo "1/8 Building the Brewtifyer app"
+  BREWTIFYER_ARCHS="${RELEASE_ARCHS}" "${SCRIPT_DIR}/build.sh"
+fi
+
+# Both paths are verified the same way: a prebuilt bundle is not trusted more
+# than a local build.
 verify_bundle_version "${APP_DIR}"
 verify_bundle_slices "${APP_DIR}"
 
