@@ -1,9 +1,9 @@
 module github.com/KevinCFechtel/Brewtifyer
 
 // The Go toolchain determines the macOS floor of every produced binary:
-// Go 1.27 requires macOS 13 or later. Keep LSMinimumSystemVersion in
-// Build/Info.plist and MACOSX_DEPLOYMENT_TARGET in Build/build.sh in sync
-// with this line.
+// Go 1.27 requires macOS 13 or later. APP_DEPLOYMENT_TARGET in
+// Build/version.sh must match; Build/build.sh verifies the linked binary
+// against it and fails the build if they drift apart.
 go 1.27
 
 toolchain go1.27.1

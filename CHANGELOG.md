@@ -32,7 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   floor of macOS 11 could not be met: the Go toolchain used to build Brewtifyer
   requires macOS 13, so binaries would not have run reliably on macOS 11 or 12
   despite the bundle advertising support. The Go toolchain is now pinned in
-  `go.mod` so that the floor cannot move silently again.
+  `go.mod`, `APP_DEPLOYMENT_TARGET` in `Build/version.sh` is the single source
+  of truth for the floor, and `Build/build.sh` verifies with `vtool` that every
+  architecture slice was actually linked against it. A toolchain upgrade that
+  raises the real floor now fails the build instead of shipping a bundle that
+  promises an older macOS than it supports.
 - Homebrew failures are shown in the menu in the selected language. Previously
   the raw English error text from `internal/brew` appeared underneath an
   otherwise localized menu. Errors are now classified into sentinel values and
@@ -61,6 +65,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   localizations, and carries a copyright and application category.
 - Ad-hoc signing no longer passes `--deep`, which Apple discourages for signing
   and which the bundle does not need.
+- Binaries are built with `-trimpath`, so no absolute build-machine path is
+  embedded any more. A release build previously shipped 148 references to the
+  maintainer's home directory.
 
 ### Fixed
 

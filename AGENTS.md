@@ -10,10 +10,13 @@ Local-only notes belong in `AGENTS.local.md`, which is ignored.
 - The public documentation is in English. The application is fully localized
   in English and German and follows the operating system language.
 - The bundle identifier is `dev.kevincfechtel.Brewtifyer`.
-- The deployment target is macOS 13. It is dictated by the Go toolchain:
-  Go 1.27 does not support earlier macOS versions. `go`/`toolchain` in
-  `go.mod`, `MACOSX_DEPLOYMENT_TARGET` in `Build/build.sh`, and
-  `LSMinimumSystemVersion` in `Build/Info.plist` must always agree.
+- The deployment target is macOS 13, dictated by the Go toolchain: Go 1.27
+  does not support earlier macOS versions.
+- `APP_DEPLOYMENT_TARGET` in `Build/version.sh` is the single source of truth.
+  `Build/build.sh` compiles against it, injects it into
+  `LSMinimumSystemVersion`, and then verifies every architecture slice with
+  `vtool`. `LSMinimumSystemVersion` in `Build/Info.plist` is a placeholder
+  (`0.0`) and must not be edited by hand.
 - Because the floor is macOS 13, `SMAppService` is always available and the
   native login-item code needs no `@available` fallback.
   `autostart.Unsupported` remains only for the non-darwin build.
@@ -81,6 +84,8 @@ Local-only notes belong in `AGENTS.local.md`, which is ignored.
   development loop. Releases must stay universal.
 - `./Build/build.sh` reads `VERSION` and `BUILD_NUMBER`, writes both values to
   the bundle, and embeds version, build number, and Git commit in the binary.
+- Builds use `-trimpath`. Do not remove it: without it the shipped binary
+  contains absolute paths from the build machine and is not reproducible.
 - `./Build/version.sh` validates version metadata. `VERSION` must use
   `MAJOR.MINOR.PATCH`; `BUILD_NUMBER` must be a positive, monotonically
   increasing integer.

@@ -34,9 +34,8 @@
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.developer-tools</string>
     <key>LSMinimumSystemVersion</key>
-    <!-- Kept in sync with MACOSX_DEPLOYMENT_TARGET in Build/build.sh and with
-         the macOS floor of the Go toolchain pinned in go.mod. -->
-    <string>13.0</string>
+    <!-- Replaced from APP_DEPLOYMENT_TARGET by Build/build.sh. -->
+    <string>0.0</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSHighResolutionCapable</key>

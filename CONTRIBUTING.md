@@ -83,15 +83,18 @@ Homebrew"). `./Build/localization.sh` verifies completeness and normalization.
 
 ## Platform floor
 
-The Go toolchain sets the macOS floor of every binary. These three must always
-agree:
+The Go toolchain sets the macOS floor of every binary. `APP_DEPLOYMENT_TARGET`
+in `Build/version.sh` is the single source of truth for it:
 
-- `go` and `toolchain` in `go.mod`
-- `MACOSX_DEPLOYMENT_TARGET` in `Build/build.sh`
-- `LSMinimumSystemVersion` in `Build/Info.plist`
+- `Build/build.sh` passes it to the compiler and writes it into
+  `LSMinimumSystemVersion` of the generated bundle. The value in
+  `Build/Info.plist` is only a placeholder; do not edit it.
+- After linking, `Build/build.sh` checks with `vtool` that every architecture
+  slice actually targets it, and fails otherwise.
 
-Raising the Go version can silently raise the macOS requirement, so change them
-together and update the README.
+Raising `go`/`toolchain` in `go.mod` can raise the real floor. You will notice,
+because the build fails until `APP_DEPLOYMENT_TARGET` is raised too. Update the
+README and the cask's `depends_on macos:` in the same change.
 
 ## Commits and scope
 

@@ -142,9 +142,14 @@ defaults instead of blocking the app, so downgrading always works.
 - Xcode Command Line Tools for building from source
 
 macOS 13 is the floor of the Go toolchain pinned in `go.mod`; a binary built
-with it cannot run on earlier versions. `LSMinimumSystemVersion` in
-`Build/Info.plist` and `MACOSX_DEPLOYMENT_TARGET` in `Build/build.sh` are kept
-in sync with that toolchain and must be raised together with it.
+with it cannot run on earlier versions.
+
+`APP_DEPLOYMENT_TARGET` in `Build/version.sh` is the single source of truth for
+that floor. `Build/build.sh` uses it for the compiler, writes it into
+`LSMinimumSystemVersion` of the generated bundle, and then verifies with
+`vtool` that every architecture slice really was linked against it. A Go
+toolchain upgrade that raises the real floor therefore fails the build instead
+of shipping a bundle that promises an older macOS than it can run on.
 
 ## Build from Source
 

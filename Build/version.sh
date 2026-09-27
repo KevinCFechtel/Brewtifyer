@@ -6,6 +6,15 @@ VERSION_REPOSITORY_DIR="$(cd -- "${VERSION_SCRIPT_DIR}/.." && pwd)"
 VERSION_FILE="${VERSION_REPOSITORY_DIR}/VERSION"
 BUILD_NUMBER_FILE="${VERSION_REPOSITORY_DIR}/BUILD_NUMBER"
 
+# Lowest macOS version the binary, the app bundle, and the icon catalog target.
+# This is the single source of truth for every build script and for
+# LSMinimumSystemVersion in the generated bundle.
+#
+# It is dictated by the Go toolchain pinned in go.mod: Go 1.27 does not support
+# macOS versions before 13. Raising the toolchain can raise this floor, so both
+# must be changed together.
+APP_DEPLOYMENT_TARGET="13.0"
+
 read_version_value() {
   local file_path="$1"
   local value=""
@@ -35,6 +44,11 @@ if [[ ! "${APP_BUILD_NUMBER}" =~ ^[1-9][0-9]*$ ]]; then
   return 1 2>/dev/null || exit 1
 fi
 
+if [[ ! "${APP_DEPLOYMENT_TARGET}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+  echo "Invalid deployment target: ${APP_DEPLOYMENT_TARGET} (expected MAJOR.MINOR)" >&2
+  return 1 2>/dev/null || exit 1
+fi
+
 APP_COMMIT="unknown"
 if command -v git >/dev/null 2>&1 && git -C "${VERSION_REPOSITORY_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   APP_COMMIT="$(git -C "${VERSION_REPOSITORY_DIR}" rev-parse --short=12 HEAD)"
@@ -43,11 +57,12 @@ if command -v git >/dev/null 2>&1 && git -C "${VERSION_REPOSITORY_DIR}" rev-pars
   fi
 fi
 
-export APP_VERSION APP_BUILD_NUMBER APP_COMMIT
+export APP_VERSION APP_BUILD_NUMBER APP_COMMIT APP_DEPLOYMENT_TARGET
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-  printf 'Version: %s\nBuild: %s\nCommit: %s\n' \
+  printf 'Version: %s\nBuild: %s\nCommit: %s\nDeployment target: macOS %s\n' \
     "${APP_VERSION}" \
     "${APP_BUILD_NUMBER}" \
-    "${APP_COMMIT}"
+    "${APP_COMMIT}" \
+    "${APP_DEPLOYMENT_TARGET}"
 fi
