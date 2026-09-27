@@ -44,6 +44,9 @@ SKIP_TAP="no"
 ALLOW_UNATTESTED="no"
 TAP_DIR="${REPOSITORY_DIR}/../homebrew-tap"
 TAP_NAME="kevincfechtel/tap"
+# Only used to run brew style and brew audit against the working copy; never
+# tapped for real, never pushed to.
+VERIFY_TAP_NAME="brewtifyer-release-check/tap"
 RELEASE_WORKFLOW="Release artifacts"
 
 while [[ $# -gt 0 ]]; do
@@ -89,8 +92,7 @@ DIGEST_RECORD="${ARCHIVE}.unsigned-sha256"
 RELEASE_RUN_ID=""
 UNSIGNED_DIGEST=""
 NOTES_FILE=""
-TAP_LINK=""
-TAP_LINK_CREATED="no"
+VERIFY_TAP_LINK=""
 
 step() { printf '\n== %s\n' "$1"; }
 fail() {
@@ -98,47 +100,47 @@ fail() {
   exit 1
 }
 
-# brew style and brew audit refuse to load a cask that is not in a tap, so the
-# working copy is linked into the Homebrew prefix for the verification and
-# unlinked afterwards.
+# brew style and brew audit only load casks from a tap inside the Homebrew
+# prefix, so the working copy has to be reachable from there.
 #
-# Two traps here, both of which have bitten:
+# The verification deliberately does not go through kevincfechtel/tap. That tap
+# is usually installed as a real clone, and brew then reads the clone instead of
+# the working copy the cask was just generated into: both checks pass without
+# ever seeing the new cask, which makes this gate a placebo exactly when it
+# matters. Untapping to work around it would tear down the maintainer's own
+# installation and break their brew upgrade until they tap again.
 #
-#   * If the tap is already installed as a real clone, that clone is what brew
-#     reads, not the working copy the cask was just generated into. Both checks
-#     then pass without ever looking at the new cask, which makes this gate a
-#     placebo exactly when it matters.
-#   * ln -sfn into an existing directory does not fail; it drops the link
-#     inside it. So the target has to be classified before linking.
-#
-# The cmp at the end is the guarantee: whatever brew is about to read must be
-# the file that was generated.
+# A throwaway tap name that nothing else uses avoids both problems: the checks
+# read the generated file, and the installed tap is left untouched.
 link_tap() {
-  local taps_dir owner
+  local taps_dir
   taps_dir="$(brew --repository)/Library/Taps"
-  owner="${TAP_NAME%%/*}"
-  TAP_LINK="${taps_dir}/${owner}/homebrew-${TAP_NAME##*/}"
+  VERIFY_TAP_LINK="${taps_dir}/${VERIFY_TAP_NAME%%/*}/homebrew-${VERIFY_TAP_NAME##*/}"
 
-  if [[ -L "${TAP_LINK}" || -d "${TAP_LINK}" ]]; then
-    TAP_LINK_CREATED="no"
-  else
-    mkdir -p -- "$(dirname -- "${TAP_LINK}")"
-    ln -sfn "$(cd -- "${TAP_DIR}" && pwd)" "${TAP_LINK}"
-    TAP_LINK_CREATED="yes"
-  fi
+  # ln -sfn into an existing directory does not fail, it drops the link inside
+  # it, so whatever sits at the path is cleared first.
+  unlink_tap
 
-  if ! cmp -s "${TAP_DIR}/Casks/brewtifyer.rb" "${TAP_LINK}/Casks/brewtifyer.rb"; then
-    fail "brew reads ${TAP_LINK}, which does not hold the cask that was just
-generated. Run 'brew untap ${TAP_NAME}' so that the working copy is used, then
-start again."
-  fi
+  mkdir -p -- "$(dirname -- "${VERIFY_TAP_LINK}")"
+  ln -sfn "$(cd -- "${TAP_DIR}" && pwd)" "${VERIFY_TAP_LINK}"
+
+  # The gate has to prove it is looking at the file that was just generated.
+  cmp -s "${TAP_DIR}/Casks/brewtifyer.rb" "${VERIFY_TAP_LINK}/Casks/brewtifyer.rb" ||
+    fail "The verification tap does not expose the generated cask: ${VERIFY_TAP_LINK}"
 }
 
+# unlink_tap only ever removes the throwaway path, never a real tap: a symlink
+# is deleted, a directory is only removed if it is empty.
 unlink_tap() {
-  [[ "${TAP_LINK_CREATED}" == "yes" ]] || return 0
-  rm -f -- "${TAP_LINK}"
-  rmdir -- "$(dirname -- "${TAP_LINK}")" 2>/dev/null || true
-  TAP_LINK_CREATED="no"
+  [[ -n "${VERIFY_TAP_LINK}" ]] || return 0
+
+  if [[ -L "${VERIFY_TAP_LINK}" ]]; then
+    rm -f -- "${VERIFY_TAP_LINK}"
+  elif [[ -d "${VERIFY_TAP_LINK}" ]]; then
+    rmdir -- "${VERIFY_TAP_LINK}" 2>/dev/null ||
+      fail "Refusing to remove ${VERIFY_TAP_LINK}: it is a non-empty directory."
+  fi
+  rmdir -- "$(dirname -- "${VERIFY_TAP_LINK}")" 2>/dev/null || true
 }
 
 cleanup() {
@@ -420,7 +422,7 @@ if [[ "${SKIP_TAP}" == "yes" ]]; then
 elif [[ "${DRY_RUN}" == "yes" ]]; then
   [[ -d "${TAP_DIR}/.git" ]] || fail "No tap checkout at ${TAP_DIR}. Pass --tap PATH."
   echo "Would generate ${TAP_DIR}/Casks/brewtifyer.rb with --verify-published,"
-  echo "then run brew style and brew audit --online against ${TAP_NAME}."
+  echo "then run brew style and brew audit --online against ${VERIFY_TAP_NAME}."
 else
   [[ -d "${TAP_DIR}/.git" ]] || fail "No tap checkout at ${TAP_DIR}. Pass --tap PATH."
 
@@ -429,8 +431,8 @@ else
   "${SCRIPT_DIR}/cask.sh" --verify-published "${TAP_DIR}/Casks/brewtifyer.rb"
 
   link_tap
-  brew style --cask "${TAP_NAME}"
-  brew audit --cask --online --strict --tap="${TAP_NAME}"
+  brew style --cask "${VERIFY_TAP_NAME}"
+  brew audit --cask --online --strict --tap="${VERIFY_TAP_NAME}"
   unlink_tap
   echo "brew style and brew audit --online passed."
 fi
