@@ -31,15 +31,15 @@ func TestServiceDeduplicatesAcrossRestarts(t *testing.T) {
 	service := NewService(statePath, sender, localization.MustNew("de"))
 	updates := resultWith(packageUpdate("go", brew.Formula, "1.26.6"))
 
-	if err := service.Handle(updates); err != nil {
+	if _, err := service.Handle(updates); err != nil {
 		t.Fatalf("handle first result: %v", err)
 	}
-	if err := service.Handle(updates); err != nil {
+	if _, err := service.Handle(updates); err != nil {
 		t.Fatalf("handle duplicate result: %v", err)
 	}
 
 	restartedService := NewService(statePath, sender, localization.MustNew("de"))
-	if err := restartedService.Handle(updates); err != nil {
+	if _, err := restartedService.Handle(updates); err != nil {
 		t.Fatalf("handle result after restart: %v", err)
 	}
 	if len(sender.messages) != 1 {
@@ -56,15 +56,15 @@ func TestServiceOnlyNotifiesAboutNewUpdates(t *testing.T) {
 	goUpdate := packageUpdate("go", brew.Formula, "1.26.6")
 	nodeUpdate := packageUpdate("node", brew.Formula, "25.0.0")
 
-	if err := service.Handle(resultWith(goUpdate, nodeUpdate)); err != nil {
+	if _, err := service.Handle(resultWith(goUpdate, nodeUpdate)); err != nil {
 		t.Fatalf("handle initial result: %v", err)
 	}
-	if err := service.Handle(resultWith(goUpdate)); err != nil {
+	if _, err := service.Handle(resultWith(goUpdate)); err != nil {
 		t.Fatalf("handle removed update: %v", err)
 	}
 
 	rustUpdate := packageUpdate("rust", brew.Formula, "2.0.0")
-	if err := service.Handle(resultWith(goUpdate, rustUpdate)); err != nil {
+	if _, err := service.Handle(resultWith(goUpdate, rustUpdate)); err != nil {
 		t.Fatalf("handle new update: %v", err)
 	}
 
@@ -87,10 +87,10 @@ func TestServiceTreatsNewTargetVersionAsNewUpdate(t *testing.T) {
 	sender := &recordingSender{}
 	service := NewService(statePath, sender, localization.MustNew("de"))
 
-	if err := service.Handle(resultWith(packageUpdate("go", brew.Formula, "1.26.6"))); err != nil {
+	if _, err := service.Handle(resultWith(packageUpdate("go", brew.Formula, "1.26.6"))); err != nil {
 		t.Fatalf("handle first version: %v", err)
 	}
-	if err := service.Handle(resultWith(packageUpdate("go", brew.Formula, "1.26.7"))); err != nil {
+	if _, err := service.Handle(resultWith(packageUpdate("go", brew.Formula, "1.26.7"))); err != nil {
 		t.Fatalf("handle next version: %v", err)
 	}
 
@@ -110,13 +110,13 @@ func TestServiceNotifiesWhenUpdateReappears(t *testing.T) {
 	service := NewService(statePath, sender, localization.MustNew("de"))
 	updates := resultWith(packageUpdate("go", brew.Formula, "1.26.6"))
 
-	if err := service.Handle(updates); err != nil {
+	if _, err := service.Handle(updates); err != nil {
 		t.Fatalf("handle first result: %v", err)
 	}
-	if err := service.Handle(resultWith()); err != nil {
+	if _, err := service.Handle(resultWith()); err != nil {
 		t.Fatalf("handle empty result: %v", err)
 	}
-	if err := service.Handle(updates); err != nil {
+	if _, err := service.Handle(updates); err != nil {
 		t.Fatalf("handle reappeared update: %v", err)
 	}
 
@@ -130,7 +130,7 @@ func TestServicePersistsStatePrivately(t *testing.T) {
 
 	statePath := filepath.Join(t.TempDir(), "Brewtifyer", "notification-state.json")
 	service := NewService(statePath, &recordingSender{}, localization.MustNew("de"))
-	if err := service.Handle(resultWith(packageUpdate("go", brew.Formula, "1.26.6"))); err != nil {
+	if _, err := service.Handle(resultWith(packageUpdate("go", brew.Formula, "1.26.6"))); err != nil {
 		t.Fatalf("handle result: %v", err)
 	}
 
@@ -143,29 +143,67 @@ func TestServicePersistsStatePrivately(t *testing.T) {
 	}
 }
 
-func TestServiceDoesNotOverwriteInvalidState(t *testing.T) {
+// The state file is a deduplication cache. An unreadable one must be rebuilt
+// rather than reported as a failure: returning an error here would skip
+// saveState, so notifications would stay broken for good until someone deleted
+// the file by hand. Paying one duplicate notification is the cheaper trade.
+func TestServiceRecoversFromInvalidState(t *testing.T) {
 	t.Parallel()
 
 	statePath := filepath.Join(t.TempDir(), "notification-state.json")
-	const invalidState = "not json\n"
-	if err := os.WriteFile(statePath, []byte(invalidState), 0o600); err != nil {
+	if err := os.WriteFile(statePath, []byte("not json\n"), 0o600); err != nil {
 		t.Fatalf("write invalid state: %v", err)
 	}
 	sender := &recordingSender{}
 	service := NewService(statePath, sender, localization.MustNew("de"))
 
-	if err := service.Handle(resultWith(packageUpdate("go", brew.Formula, "1.26.6"))); err == nil {
-		t.Fatal("Handle() error = nil, want invalid state error")
+	note, err := service.Handle(resultWith(packageUpdate("go", brew.Formula, "1.26.6")))
+	if err != nil {
+		t.Fatalf("Handle() error = %v, want nil", err)
 	}
+	if note == "" {
+		t.Error("note is empty, want an explanation that the state was discarded")
+	}
+	if len(sender.messages) != 1 {
+		t.Fatalf("sent %d notifications, want 1", len(sender.messages))
+	}
+
+	// The rebuilt state must be usable, so a second identical result is quiet.
+	if _, err := service.Handle(resultWith(packageUpdate("go", brew.Formula, "1.26.6"))); err != nil {
+		t.Fatalf("Handle() error = %v", err)
+	}
+	if len(sender.messages) != 1 {
+		t.Fatalf("sent %d notifications after recovery, want 1", len(sender.messages))
+	}
+}
+
+// A state file written by a newer Brewtifyer must not wedge an older one.
+func TestServiceRecoversFromUnknownStateVersion(t *testing.T) {
+	t.Parallel()
+
+	statePath := filepath.Join(t.TempDir(), "notification-state.json")
+	future := `{"version":99,"packages":[{"name":"go","kind":"formula","version":"1.26.6"}]}`
+	if err := os.WriteFile(statePath, []byte(future), 0o600); err != nil {
+		t.Fatalf("write future state: %v", err)
+	}
+	sender := &recordingSender{}
+	service := NewService(statePath, sender, localization.MustNew("de"))
+
+	note, err := service.Handle(resultWith(packageUpdate("go", brew.Formula, "1.26.6")))
+	if err != nil {
+		t.Fatalf("Handle() error = %v, want nil", err)
+	}
+	if !strings.Contains(note, "99") {
+		t.Errorf("note = %q, want it to name the unsupported version", note)
+	}
+
+	// The file must have been rewritten at the supported version.
 	content, err := os.ReadFile(statePath)
 	if err != nil {
 		t.Fatalf("read state: %v", err)
 	}
-	if string(content) != invalidState {
-		t.Fatalf("invalid state was unexpectedly overwritten")
-	}
-	if len(sender.messages) != 0 {
-		t.Fatalf("sent %d notifications, want 0", len(sender.messages))
+	if !strings.Contains(string(content), `"version": 1`) {
+		t.Errorf("state = %s, want it rewritten at version 1", content)
 	}
 }
 

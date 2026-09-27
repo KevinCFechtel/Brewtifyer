@@ -11,12 +11,12 @@ read_version_value() {
   local value=""
 
   if [[ ! -f "${file_path}" ]]; then
-    echo "Versionsdatei fehlt: ${file_path}" >&2
+    echo "Version file is missing: ${file_path}" >&2
     return 1
   fi
   IFS= read -r value < "${file_path}" || true
   if [[ -z "${value}" ]]; then
-    echo "Versionsdatei ist leer: ${file_path}" >&2
+    echo "Version file is empty: ${file_path}" >&2
     return 1
   fi
   printf '%s' "${value}"
@@ -26,12 +26,12 @@ APP_VERSION="$(read_version_value "${VERSION_FILE}")"
 APP_BUILD_NUMBER="$(read_version_value "${BUILD_NUMBER_FILE}")"
 
 if [[ ! "${APP_VERSION}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-  echo "Ungültige App-Version in VERSION: ${APP_VERSION} (erwartet: MAJOR.MINOR.PATCH)" >&2
+  echo "Invalid app version in VERSION: ${APP_VERSION} (expected MAJOR.MINOR.PATCH)" >&2
   return 1 2>/dev/null || exit 1
 fi
 
 if [[ ! "${APP_BUILD_NUMBER}" =~ ^[1-9][0-9]*$ ]]; then
-  echo "Ungültige Build-Nummer in BUILD_NUMBER: ${APP_BUILD_NUMBER} (erwartet: positive Ganzzahl)" >&2
+  echo "Invalid build number in BUILD_NUMBER: ${APP_BUILD_NUMBER} (expected a positive integer)" >&2
   return 1 2>/dev/null || exit 1
 fi
 

@@ -103,6 +103,27 @@ func (strings *Strings) UpgradePressAnyKey() string {
 func (strings *Strings) HomebrewNotFound() string {
 	return strings.localize(messageErrorHomebrewNotFound, nil, nil)
 }
+func (strings *Strings) HomebrewNotFoundTooltip() string {
+	return strings.localize(messageErrorHomebrewNotFoundTooltip, nil, nil)
+}
+func (strings *Strings) HomebrewQueryFailed() string {
+	return strings.localize(messageErrorHomebrewQueryFailed, nil, nil)
+}
+func (strings *Strings) HomebrewTimeout() string {
+	return strings.localize(messageErrorHomebrewTimeout, nil, nil)
+}
+func (strings *Strings) HomebrewTimeoutTooltip() string {
+	return strings.localize(messageErrorHomebrewTimeoutTooltip, nil, nil)
+}
+func (strings *Strings) HomebrewUnexpectedOutput() string {
+	return strings.localize(messageErrorHomebrewUnexpectedOutput, nil, nil)
+}
+func (strings *Strings) HomebrewUnexpectedOutputTooltip() string {
+	return strings.localize(messageErrorHomebrewUnexpectedOutputTooltip, nil, nil)
+}
+func (strings *Strings) UnexpectedError() string {
+	return strings.localize(messageErrorUnexpected, nil, nil)
+}
 func (strings *Strings) PackageNameMissing() string {
 	return strings.localize(messageErrorPackageNameMissing, nil, nil)
 }

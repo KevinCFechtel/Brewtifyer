@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
+	"github.com/KevinCFechtel/Brewtifyer/internal/config"
 	"github.com/KevinCFechtel/Brewtifyer/internal/localization"
 )
 
@@ -146,7 +147,7 @@ func TestFailedOpenRemovesCommandFile(t *testing.T) {
 func TestUpgradePackageRejectsUnknownKind(t *testing.T) {
 	t.Parallel()
 
-	launcher := NewTerminalLauncher("/opt/homebrew/bin/brew", localization.MustNew("de"))
+	launcher := NewTerminalLauncher("/opt/homebrew/bin/brew", "Terminal", localization.MustNew("de"))
 	err := launcher.UpgradePackage(brew.Package{Name: "example", Kind: "unknown"})
 	if err == nil {
 		t.Fatal("UpgradePackage() error = nil, want unknown kind error")
@@ -166,7 +167,7 @@ func TestGeneratedCommandHasValidZshSyntax(t *testing.T) {
 		"Homebrew-Update für example'; echo unsafe; '",
 		localization.MustNew("de"),
 	)
-	command := exec.Command(zshPath, "-n")
+	command := exec.CommandContext(t.Context(), zshPath, "-n")
 	command.Stdin = strings.NewReader(script)
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("zsh rejected generated command: %v\n%s", err, output)
@@ -212,4 +213,23 @@ func testLauncher(t *testing.T) (*TerminalLauncher, <-chan string) {
 		return nil
 	}
 	return launcher, openedScript
+}
+
+func TestNewTerminalLauncherFallsBackToDefaultApplication(t *testing.T) {
+	t.Parallel()
+
+	launcher := NewTerminalLauncher("/opt/homebrew/bin/brew", "", localization.MustNew("en"))
+	if launcher.application != config.DefaultTerminalApplication {
+		t.Fatalf("application = %q, want %q",
+			launcher.application, config.DefaultTerminalApplication)
+	}
+}
+
+func TestNewTerminalLauncherKeepsConfiguredApplication(t *testing.T) {
+	t.Parallel()
+
+	launcher := NewTerminalLauncher("/opt/homebrew/bin/brew", "Ghostty", localization.MustNew("en"))
+	if launcher.application != "Ghostty" {
+		t.Fatalf("application = %q, want %q", launcher.application, "Ghostty")
+	}
 }

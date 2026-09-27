@@ -7,4 +7,4 @@ REPOSITORY_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 cd "${REPOSITORY_DIR}"
 gofmt -w ./cmd ./internal ./tools
 
-echo "Go-Quellcode formatiert."
+echo "Go sources formatted."

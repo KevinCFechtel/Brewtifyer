@@ -1,34 +1,49 @@
+// Package upgrade opens interactive Homebrew upgrades in a terminal
+// application, so that Homebrew stays visible and can prompt the user.
 package upgrade
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
+	"github.com/KevinCFechtel/Brewtifyer/internal/config"
 	"github.com/KevinCFechtel/Brewtifyer/internal/localization"
 )
 
-const terminalApplication = "Terminal"
+// openTimeout bounds the `open` call that hands the command file to the
+// terminal application.
+const openTimeout = 30 * time.Second
 
-// TerminalLauncher writes a short-lived .command file and opens it in the
-// macOS Terminal app. Homebrew remains interactive and can ask for confirmation
-// or credentials there.
+// TerminalLauncher writes a short-lived .command file and opens it in a
+// terminal application. Homebrew remains interactive and can ask for
+// confirmation or credentials there.
 type TerminalLauncher struct {
-	brewPath string
-	tempDir  string
-	openFile func(string) error
-	texts    *localization.Strings
+	brewPath    string
+	application string
+	tempDir     string
+	openFile    func(string) error
+	texts       *localization.Strings
 }
 
-func NewTerminalLauncher(brewPath string, texts *localization.Strings) *TerminalLauncher {
+// NewTerminalLauncher opens upgrades in application, which is the name of a
+// macOS app such as "Terminal", "iTerm" or "Ghostty". An empty name falls back
+// to the system default so a bad configuration cannot disable upgrades.
+func NewTerminalLauncher(brewPath, application string, texts *localization.Strings) *TerminalLauncher {
+	if application == "" {
+		application = config.DefaultTerminalApplication
+	}
 	launcher := &TerminalLauncher{
-		brewPath: brewPath,
-		texts:    texts,
+		brewPath:    brewPath,
+		application: application,
+		texts:       texts,
 	}
 	launcher.openFile = func(commandPath string) error {
-		return openInTerminal(commandPath, texts)
+		return openInTerminal(launcher.application, commandPath, texts)
 	}
 	return launcher
 }
@@ -89,8 +104,13 @@ func (launcher *TerminalLauncher) launch(arguments []string, description string)
 	return nil
 }
 
-func openInTerminal(commandPath string, texts *localization.Strings) error {
-	output, err := exec.Command("/usr/bin/open", "-a", terminalApplication, commandPath).CombinedOutput()
+func openInTerminal(application, commandPath string, texts *localization.Strings) error {
+	// `open` hands the file to the terminal app and returns immediately, so a
+	// short budget is plenty and keeps a wedged launch from blocking the menu.
+	ctx, cancel := context.WithTimeout(context.Background(), openTimeout)
+	defer cancel()
+
+	output, err := exec.CommandContext(ctx, "/usr/bin/open", "-a", application, commandPath).CombinedOutput()
 	if err != nil {
 		message := strings.TrimSpace(string(output))
 		if message == "" {

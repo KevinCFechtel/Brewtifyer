@@ -3,7 +3,12 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleDevelopmentRegion</key>
-    <string>de</string>
+    <string>en</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+        <string>de</string>
+    </array>
     <key>CFBundleExecutable</key>
     <string>Brewtifyer</string>
     <key>CFBundleIdentifier</key>
@@ -16,6 +21,8 @@
     <string>6.0</string>
     <key>CFBundleName</key>
     <string>Brewtifyer</string>
+    <key>CFBundleDisplayName</key>
+    <string>Brewtifyer</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -24,11 +31,17 @@
     <key>CFBundleVersion</key>
     <!-- Replaced from BUILD_NUMBER by Build/build.sh. -->
     <string>0</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.developer-tools</string>
     <key>LSMinimumSystemVersion</key>
-    <string>11.0</string>
+    <!-- Kept in sync with MACOSX_DEPLOYMENT_TARGET in Build/build.sh and with
+         the macOS floor of the Go toolchain pinned in go.mod. -->
+    <string>13.0</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © 2026 Kevin C. Fechtel. MIT License.</string>
 </dict>
 </plist>

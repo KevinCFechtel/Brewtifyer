@@ -20,4 +20,4 @@ sips -z 32 32 \
 cd "${REPOSITORY_DIR}"
 go run ./tools/templatemask "${TEMP_DIR}/menu_bar_icon.png" "${OUTPUT_PNG}"
 
-echo "Menüleisten-Icon erstellt: ${OUTPUT_PNG}"
+echo "Menu bar icon created: ${OUTPUT_PNG}"

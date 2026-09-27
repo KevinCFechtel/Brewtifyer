@@ -27,25 +27,25 @@ func ParseOutdated(reader io.Reader) ([]Package, error) {
 
 	var document outdatedDocument
 	if err := decoder.Decode(&document); err != nil {
-		return nil, fmt.Errorf("Homebrew output could not be read: %w", err)
+		return nil, fmt.Errorf("%w: output could not be read: %w", ErrInvalidOutput, err)
 	}
 
 	var trailing any
 	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
 		if err == nil {
-			return nil, errors.New("Homebrew output contains additional JSON data")
+			return nil, fmt.Errorf("%w: output contains additional JSON data", ErrInvalidOutput)
 		}
-		return nil, fmt.Errorf("Homebrew output contains invalid data: %w", err)
+		return nil, fmt.Errorf("%w: output contains invalid trailing data: %w", ErrInvalidOutput, err)
 	}
 
 	packages := make([]Package, 0, len(document.Formulae)+len(document.Casks))
 	appendEntries := func(entries []outdatedEntry, kind Kind) error {
 		for _, entry := range entries {
 			if strings.TrimSpace(entry.Name) == "" {
-				return fmt.Errorf("Homebrew reported a %s without a name", kind)
+				return fmt.Errorf("%w: reported a %s without a name", ErrInvalidOutput, kind)
 			}
 			if strings.TrimSpace(entry.CurrentVersion) == "" {
-				return fmt.Errorf("Homebrew reported no current version for %q", entry.Name)
+				return fmt.Errorf("%w: reported no current version for %q", ErrInvalidOutput, entry.Name)
 			}
 
 			packages = append(packages, Package{

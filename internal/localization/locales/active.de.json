@@ -14,6 +14,36 @@
     "hash": "sha1-ca0869339b5b6b0ccb79dc20906c268623aec9e7",
     "other": "Homebrew wurde nicht gefunden"
   },
+  "Error.HomebrewNotFoundTooltip": {
+    "description": "Tooltip explaining how to resolve a missing Homebrew installation.",
+    "hash": "sha1-5c103d3f3b81607d91015b9e28166685a29de09c",
+    "other": "Homebrew installieren oder BREWTIFYER_BREW_PATH auf den Pfad setzen"
+  },
+  "Error.HomebrewQueryFailed": {
+    "description": "Error shown when Homebrew ran but did not complete successfully.",
+    "hash": "sha1-451580516e88a8e8f477af97608f352d2fca17d4",
+    "other": "Homebrew konnte nicht abgefragt werden"
+  },
+  "Error.HomebrewTimeout": {
+    "description": "Error shown when Homebrew exceeded its time budget.",
+    "hash": "sha1-84e95860c4997d10f12d22cd7fd77b4caf15f758",
+    "other": "Homebrew hat nicht rechtzeitig geantwortet"
+  },
+  "Error.HomebrewTimeoutTooltip": {
+    "description": "Tooltip explaining a Homebrew timeout.",
+    "hash": "sha1-1efc7442927fdf8fc9793e237d3e3b8e793edf0c",
+    "other": "Internetverbindung prüfen und erneut versuchen"
+  },
+  "Error.HomebrewUnexpectedOutput": {
+    "description": "Error shown when Homebrew output could not be interpreted.",
+    "hash": "sha1-ad8fda51b3213291f7e72d663373d2e008f8cd2e",
+    "other": "Homebrew hat unerwartete Daten zurückgegeben"
+  },
+  "Error.HomebrewUnexpectedOutputTooltip": {
+    "description": "Tooltip shown when the Homebrew output format is not understood.",
+    "hash": "sha1-21adbe3591d423eca39e744abfb50a91b49d8f92",
+    "other": "Diese Homebrew-Version benötigt möglicherweise ein neueres Brewtifyer"
+  },
   "Error.MakeUpgradeCommandExecutable": {
     "description": "Error prefix when the temporary update command cannot be made executable.",
     "hash": "sha1-526f90a747ca19311410e0c6a14be79b09046aa4",
@@ -38,6 +68,11 @@
     "description": "Error shown when an update package has no name.",
     "hash": "sha1-1d4001e8a070d44d6fc0701a050c1b67a091019a",
     "other": "Der Paketname fehlt"
+  },
+  "Error.Unexpected": {
+    "description": "Fallback error shown when a failure could not be classified.",
+    "hash": "sha1-0c6acef5ae02de4846126e5c5918841b4b48a7a7",
+    "other": "Ein unerwarteter Fehler ist aufgetreten"
   },
   "Error.WriteUpgradeCommand": {
     "description": "Error prefix when the temporary update command cannot be written.",
@@ -157,8 +192,8 @@
     "other": "Zeitpunkt der letzten erfolgreichen Prüfung"
   },
   "Tray.MoreUpdates": {
-    "description": "Number of additional updates hidden because the menu shows at most ten packages.",
-    "hash": "sha1-8961e2466b2832240208984cec3ca29b2ab548d4",
+    "description": "Number of additional updates hidden because the menu shows a limited number of packages.",
+    "hash": "sha1-701e5737708efec29b2dcfd59af4874dae22f341",
     "one": "… und {{.Count}} weiteres Update",
     "other": "… und {{.Count}} weitere Updates"
   },

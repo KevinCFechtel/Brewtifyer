@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest a change to Brewtifyer.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Brewtifyer deliberately stays small: Go-first, only the standalone
+        `fyne.io/systray` module for the menu bar, and focused native bridges.
+        Requests that fit inside those constraints are much easier to accept.
+        See `AGENTS.md` for the full list.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: How should it work?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered

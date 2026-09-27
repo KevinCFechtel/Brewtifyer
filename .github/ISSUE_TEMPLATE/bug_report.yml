@@ -1,0 +1,65 @@
+name: Bug report
+description: Something in Brewtifyer does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Brewtifyer writes a log to
+        `~/Library/Logs/Brewtifyer/brewtifyer.log`. It usually contains the
+        cause and is the most useful thing you can attach.
+
+  - type: input
+    id: version
+    attributes:
+      label: Brewtifyer version
+      description: "Output of: Brewtifyer.app/Contents/MacOS/Brewtifyer --version"
+      placeholder: "0.1.0 (build 1, commit abc123def456)"
+    validations:
+      required: true
+
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "14.5 (arm64)"
+    validations:
+      required: true
+
+  - type: input
+    id: brew
+    attributes:
+      label: Homebrew version
+      description: "Output of: brew --version"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Relevant log output
+      render: text

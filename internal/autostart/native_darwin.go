@@ -15,11 +15,8 @@ import "C"
 
 import (
 	"errors"
-	"fmt"
 	"unsafe"
 )
-
-const nativeError = -1
 
 type NativeController struct{}
 
@@ -59,18 +56,5 @@ func (NativeController) OpenSettings() error {
 }
 
 func statusFromNative(nativeStatus C.int) (Status, error) {
-	switch nativeStatus {
-	case 0:
-		return Unsupported, nil
-	case 1:
-		return Disabled, nil
-	case 2:
-		return Enabled, nil
-	case 3:
-		return RequiresApproval, nil
-	case 4:
-		return NotFound, nil
-	default:
-		return NotFound, fmt.Errorf("unknown native launch-at-login status: %d", int(nativeStatus))
-	}
+	return statusFromCode(int(nativeStatus))
 }

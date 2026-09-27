@@ -100,7 +100,7 @@ var (
 	}
 	messageTrayMoreUpdates = &i18n.Message{
 		ID:          "Tray.MoreUpdates",
-		Description: "Number of additional updates hidden because the menu shows at most ten packages.",
+		Description: "Number of additional updates hidden because the menu shows a limited number of packages.",
 		One:         "… and {{.Count}} more update",
 		Other:       "… and {{.Count}} more updates",
 	}
@@ -251,6 +251,41 @@ var (
 		ID:          "Error.HomebrewNotFound",
 		Description: "Error shown when no Homebrew executable can be found.",
 		Other:       "Homebrew was not found",
+	}
+	messageErrorHomebrewNotFoundTooltip = &i18n.Message{
+		ID:          "Error.HomebrewNotFoundTooltip",
+		Description: "Tooltip explaining how to resolve a missing Homebrew installation.",
+		Other:       "Install Homebrew, or set BREWTIFYER_BREW_PATH to its location",
+	}
+	messageErrorHomebrewQueryFailed = &i18n.Message{
+		ID:          "Error.HomebrewQueryFailed",
+		Description: "Error shown when Homebrew ran but did not complete successfully.",
+		Other:       "Homebrew could not be queried",
+	}
+	messageErrorHomebrewTimeout = &i18n.Message{
+		ID:          "Error.HomebrewTimeout",
+		Description: "Error shown when Homebrew exceeded its time budget.",
+		Other:       "Homebrew did not respond in time",
+	}
+	messageErrorHomebrewTimeoutTooltip = &i18n.Message{
+		ID:          "Error.HomebrewTimeoutTooltip",
+		Description: "Tooltip explaining a Homebrew timeout.",
+		Other:       "Check your internet connection and try again",
+	}
+	messageErrorHomebrewUnexpectedOutput = &i18n.Message{
+		ID:          "Error.HomebrewUnexpectedOutput",
+		Description: "Error shown when Homebrew output could not be interpreted.",
+		Other:       "Homebrew returned unexpected data",
+	}
+	messageErrorHomebrewUnexpectedOutputTooltip = &i18n.Message{
+		ID:          "Error.HomebrewUnexpectedOutputTooltip",
+		Description: "Tooltip shown when the Homebrew output format is not understood.",
+		Other:       "This Homebrew version may need a newer Brewtifyer",
+	}
+	messageErrorUnexpected = &i18n.Message{
+		ID:          "Error.Unexpected",
+		Description: "Fallback error shown when a failure could not be classified.",
+		Other:       "An unexpected error occurred",
 	}
 	messageErrorPackageNameMissing = &i18n.Message{
 		ID:          "Error.PackageNameMissing",

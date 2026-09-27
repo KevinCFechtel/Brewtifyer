@@ -1,3 +1,7 @@
+// Package brew locates the Homebrew executable, runs update checks, and
+// parses the outdated package data. It never depends on localization:
+// failures are reported through the sentinel errors in errors.go, which the
+// user interface maps to localized text.
 package brew
 
 import "time"

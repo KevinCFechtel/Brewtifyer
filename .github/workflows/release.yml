@@ -1,0 +1,58 @@
+name: Release artifacts
+
+# Signing and notarization stay local: Build/release.sh needs the private
+# Developer ID identity and a notarytool keychain profile. This workflow only
+# proves that a tagged commit builds and passes verification, and publishes an
+# unsigned bundle for inspection. The signed, notarized and stapled archive is
+# still produced by Build/release.sh and attached to the release by hand.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-tag:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Verify tag matches VERSION
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          expected="v$(cat VERSION)"
+          if [[ "${tag}" != "${expected}" ]]; then
+            echo "Tag ${tag} does not match VERSION (${expected})." >&2
+            exit 1
+          fi
+
+      - run: ./Build/vet.sh
+      - run: ./Build/localization.sh
+      - run: go test -race ./...
+      - run: ./Build/build.sh
+
+      - name: Verify universal binary
+        run: |
+          archs="$(lipo -archs dist/Brewtifyer.app/Contents/MacOS/Brewtifyer)"
+          echo "Architectures: ${archs}"
+          for required in arm64 x86_64; do
+            if [[ "${archs}" != *"${required}"* ]]; then
+              echo "Missing ${required} slice in release build." >&2
+              exit 1
+            fi
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Brewtifyer-${{ github.ref_name }}-unsigned
+          path: dist/Brewtifyer.app
+          retention-days: 14

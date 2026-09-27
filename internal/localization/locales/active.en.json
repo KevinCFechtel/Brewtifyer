@@ -11,6 +11,30 @@
     "description": "Error shown when no Homebrew executable can be found.",
     "other": "Homebrew was not found"
   },
+  "Error.HomebrewNotFoundTooltip": {
+    "description": "Tooltip explaining how to resolve a missing Homebrew installation.",
+    "other": "Install Homebrew, or set BREWTIFYER_BREW_PATH to its location"
+  },
+  "Error.HomebrewQueryFailed": {
+    "description": "Error shown when Homebrew ran but did not complete successfully.",
+    "other": "Homebrew could not be queried"
+  },
+  "Error.HomebrewTimeout": {
+    "description": "Error shown when Homebrew exceeded its time budget.",
+    "other": "Homebrew did not respond in time"
+  },
+  "Error.HomebrewTimeoutTooltip": {
+    "description": "Tooltip explaining a Homebrew timeout.",
+    "other": "Check your internet connection and try again"
+  },
+  "Error.HomebrewUnexpectedOutput": {
+    "description": "Error shown when Homebrew output could not be interpreted.",
+    "other": "Homebrew returned unexpected data"
+  },
+  "Error.HomebrewUnexpectedOutputTooltip": {
+    "description": "Tooltip shown when the Homebrew output format is not understood.",
+    "other": "This Homebrew version may need a newer Brewtifyer"
+  },
   "Error.MakeUpgradeCommandExecutable": {
     "description": "Error prefix when the temporary update command cannot be made executable.",
     "other": "The update command could not be made executable"
@@ -30,6 +54,10 @@
   "Error.PackageNameMissing": {
     "description": "Error shown when an update package has no name.",
     "other": "Package name is missing"
+  },
+  "Error.Unexpected": {
+    "description": "Fallback error shown when a failure could not be classified.",
+    "other": "An unexpected error occurred"
   },
   "Error.WriteUpgradeCommand": {
     "description": "Error prefix when the temporary update command cannot be written.",
@@ -126,7 +154,7 @@
     "other": "Time of the last successful check"
   },
   "Tray.MoreUpdates": {
-    "description": "Number of additional updates hidden because the menu shows at most ten packages.",
+    "description": "Number of additional updates hidden because the menu shows a limited number of packages.",
     "one": "… and {{.Count}} more update",
     "other": "… and {{.Count}} more updates"
   },

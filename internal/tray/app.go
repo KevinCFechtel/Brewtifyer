@@ -1,34 +1,56 @@
+// Package tray owns the menu bar interface. The menu bar library is reached
+// only through the Menu and MenuItem interfaces in menu.go, which keeps the
+// render logic testable and the library replaceable.
 package tray
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
-
-	"fyne.io/systray"
+	"unicode/utf8"
 
 	"github.com/KevinCFechtel/Brewtifyer/internal/autostart"
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
+	"github.com/KevinCFechtel/Brewtifyer/internal/config"
 	"github.com/KevinCFechtel/Brewtifyer/internal/localization"
 	"github.com/KevinCFechtel/Brewtifyer/internal/monitor"
 )
 
-const (
-	maxVisibleUpdates        = 10
-	autostartRefreshInterval = 5 * time.Second
-)
+const autostartRefreshInterval = 5 * time.Second
 
 type Updater interface {
 	UpgradePackage(brew.Package) error
 	UpgradeAll() error
 }
 
+// Options collects everything the menu bar application depends on. It is a
+// struct rather than a parameter list so that a new dependency does not break
+// every caller.
+type Options struct {
+	// Menu is the menu bar backend. Required.
+	Menu Menu
+	// Checker performs one Homebrew check. Required.
+	Checker monitor.Checker
+	// Config supplies the check interval and the menu limits.
+	Config config.Config
+	// ResultHandler is called after every successful check. Optional.
+	ResultHandler func(brew.Result)
+	// Updater opens interactive upgrades. Nil disables the upgrade actions.
+	Updater Updater
+	// Autostart manages the login item. Nil reports the feature unsupported.
+	Autostart autostart.Controller
+	// Texts supplies all user-facing strings. Required.
+	Texts *localization.Strings
+}
+
 type App struct {
+	menu          Menu
 	checker       monitor.Checker
-	interval      time.Duration
+	configuration config.Config
 	resultHandler func(brew.Result)
 	updater       Updater
 	autostart     autostart.Controller
@@ -41,77 +63,79 @@ type App struct {
 	packagesMutex   sync.RWMutex
 	currentPackages []brew.Package
 
-	statusItem            *systray.MenuItem
-	checkedItem           *systray.MenuItem
-	updateItems           []*systray.MenuItem
-	overflow              *systray.MenuItem
-	updateAllItem         *systray.MenuItem
-	refreshItem           *systray.MenuItem
-	autostartItem         *systray.MenuItem
-	autostartSettingsItem *systray.MenuItem
-	quitItem              *systray.MenuItem
+	statusItem            MenuItem
+	checkedItem           MenuItem
+	updateItems           []MenuItem
+	overflow              MenuItem
+	updateAllItem         MenuItem
+	refreshItem           MenuItem
+	autostartItem         MenuItem
+	autostartSettingsItem MenuItem
+	quitItem              MenuItem
 }
 
-func New(
-	checker monitor.Checker,
-	interval time.Duration,
-	resultHandler func(brew.Result),
-	updater Updater,
-	autostartController autostart.Controller,
-	texts *localization.Strings,
-) *App {
+func New(options Options) *App {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &App{
-		checker:       checker,
-		interval:      interval,
-		resultHandler: resultHandler,
-		updater:       updater,
-		autostart:     autostartController,
-		texts:         texts,
+		menu:          options.Menu,
+		checker:       options.Checker,
+		configuration: options.Config,
+		resultHandler: options.ResultHandler,
+		updater:       options.Updater,
+		autostart:     options.Autostart,
+		texts:         options.Texts,
 		ctx:           ctx,
 		cancel:        cancel,
 	}
 }
 
+// OnReady is the systray entry point: it builds the menu and starts the
+// background tasks.
 func (app *App) OnReady() {
-	icon := iconPNG()
-	systray.SetTemplateIcon(icon, icon)
-	systray.SetTooltip(app.texts.TrayTooltip())
-	systray.SetRemovalAllowed(false)
+	app.buildMenu()
+	app.monitor = monitor.New(app.checker, app.configuration.CheckInterval, app.render)
+	app.refreshAutostart()
+	app.startBackgroundTasks()
+}
 
-	app.statusItem = systray.AddMenuItem(app.texts.Checking(), app.texts.CurrentStatusTooltip())
+// buildMenu creates every menu item in its initial state. It is separate from
+// OnReady so that the render logic can be exercised against a fake menu without
+// starting any goroutine.
+func (app *App) buildMenu() {
+	app.menu.SetTemplateIcon(iconPNG())
+	app.menu.SetTooltip(app.texts.TrayTooltip())
+	app.menu.SetRemovalAllowed(false)
+
+	app.statusItem = app.menu.AddItem(app.texts.Checking(), app.texts.CurrentStatusTooltip())
 	app.statusItem.Disable()
-	app.checkedItem = systray.AddMenuItem(app.texts.NotChecked(), app.texts.LastCheckTooltip())
+	app.checkedItem = app.menu.AddItem(app.texts.NotChecked(), app.texts.LastCheckTooltip())
 	app.checkedItem.Disable()
-	systray.AddSeparator()
+	app.menu.AddSeparator()
 
-	for range maxVisibleUpdates {
-		item := systray.AddMenuItem("", app.texts.UpgradePackageMenuTooltip())
+	for range app.configuration.MaxVisibleUpdates {
+		item := app.menu.AddItem("", app.texts.UpgradePackageMenuTooltip())
 		item.Disable()
 		item.Hide()
 		app.updateItems = append(app.updateItems, item)
 	}
-	app.overflow = systray.AddMenuItem("", "")
+	app.overflow = app.menu.AddItem("", "")
 	app.overflow.Disable()
 	app.overflow.Hide()
-	app.updateAllItem = systray.AddMenuItem(app.texts.UpgradeAll(), app.texts.UpgradeAllTooltip())
+	app.updateAllItem = app.menu.AddItem(app.texts.UpgradeAll(), app.texts.UpgradeAllTooltip())
 	app.updateAllItem.Disable()
 	app.updateAllItem.Hide()
 
-	systray.AddSeparator()
-	app.refreshItem = systray.AddMenuItem(app.texts.Refresh(), app.texts.RefreshTooltip())
-	app.autostartItem = systray.AddMenuItemCheckbox(app.texts.AutostartTitle(), app.texts.AutostartEnableTooltip(), false)
-	app.autostartSettingsItem = systray.AddMenuItem(
+	app.menu.AddSeparator()
+	app.refreshItem = app.menu.AddItem(app.texts.Refresh(), app.texts.RefreshTooltip())
+	app.autostartItem = app.menu.AddCheckbox(
+		app.texts.AutostartTitle(), app.texts.AutostartEnableTooltip(), false)
+	app.autostartSettingsItem = app.menu.AddItem(
 		app.texts.OpenLoginItems(),
 		app.texts.OpenLoginItemsTooltip(),
 	)
 	app.autostartSettingsItem.Hide()
-	systray.AddSeparator()
-	app.quitItem = systray.AddMenuItem(app.texts.Quit(), app.texts.QuitTooltip())
-
-	app.monitor = monitor.New(app.checker, app.interval, app.render)
-	app.refreshAutostart()
-	app.startBackgroundTasks()
+	app.menu.AddSeparator()
+	app.quitItem = app.menu.AddItem(app.texts.Quit(), app.texts.QuitTooltip())
 }
 
 func (app *App) OnExit() {
@@ -119,97 +143,91 @@ func (app *App) OnExit() {
 	app.wait.Wait()
 }
 
+// goroutine starts a tracked background task. Registering the task with the
+// wait group here, rather than counting the goroutines up front, keeps OnExit
+// correct when a task is added or removed.
+func (app *App) goroutine(task func()) {
+	app.wait.Add(1)
+	go func() {
+		defer app.wait.Done()
+		task()
+	}()
+}
+
 func (app *App) startBackgroundTasks() {
-	app.wait.Add(5 + len(app.updateItems))
+	app.goroutine(func() { app.monitor.Run(app.ctx) })
 
-	go func() {
-		defer app.wait.Done()
-		app.monitor.Run(app.ctx)
-	}()
+	app.goroutine(func() {
+		app.consumeClicks(app.refreshItem, func() { app.monitor.Trigger() })
+	})
 
-	go func() {
-		defer app.wait.Done()
-		for {
-			select {
-			case <-app.ctx.Done():
-				return
-			case <-app.refreshItem.ClickedCh:
-				app.monitor.Trigger()
-			}
+	app.goroutine(func() {
+		select {
+		case <-app.ctx.Done():
+		case <-app.quitItem.Clicked():
+			app.cancel()
+			app.menu.Quit()
 		}
-	}()
+	})
 
-	go func() {
-		defer app.wait.Done()
+	for index, item := range app.updateItems {
+		app.goroutine(func() {
+			app.consumeClicks(item, func() { app.upgradePackage(index) })
+		})
+	}
+
+	app.goroutine(func() {
+		app.consumeClicks(app.updateAllItem, app.upgradeAll)
+	})
+
+	app.goroutine(app.watchAutostart)
+}
+
+// consumeClicks runs handle for every activation of item until the app stops.
+func (app *App) consumeClicks(item MenuItem, handle func()) {
+	clicked := item.Clicked()
+	for {
 		select {
 		case <-app.ctx.Done():
 			return
-		case <-app.quitItem.ClickedCh:
-			app.cancel()
-			systray.Quit()
-		}
-	}()
-
-	for index, item := range app.updateItems {
-		go func() {
-			defer app.wait.Done()
-			for {
-				select {
-				case <-app.ctx.Done():
-					return
-				case _, open := <-item.ClickedCh:
-					if !open {
-						return
-					}
-					app.upgradePackage(index)
-				}
+		case _, open := <-clicked:
+			if !open {
+				return
 			}
-		}()
+			handle()
+		}
 	}
+}
 
-	go func() {
-		defer app.wait.Done()
-		for {
-			select {
-			case <-app.ctx.Done():
-				return
-			case _, open := <-app.updateAllItem.ClickedCh:
-				if !open {
-					return
-				}
-				app.upgradeAll()
-			}
-		}
-	}()
+func (app *App) watchAutostart() {
+	ticker := time.NewTicker(autostartRefreshInterval)
+	defer ticker.Stop()
 
-	go func() {
-		defer app.wait.Done()
-		ticker := time.NewTicker(autostartRefreshInterval)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-app.ctx.Done():
+	autostartClicked := app.autostartItem.Clicked()
+	settingsClicked := app.autostartSettingsItem.Clicked()
+	for {
+		select {
+		case <-app.ctx.Done():
+			return
+		case _, open := <-autostartClicked:
+			if !open {
 				return
-			case _, open := <-app.autostartItem.ClickedCh:
-				if !open {
-					return
-				}
-				app.toggleAutostart()
-			case _, open := <-app.autostartSettingsItem.ClickedCh:
-				if !open {
-					return
-				}
-				app.openAutostartSettings()
-			case <-ticker.C:
-				app.refreshAutostart()
 			}
+			app.toggleAutostart()
+		case _, open := <-settingsClicked:
+			if !open {
+				return
+			}
+			app.openAutostartSettings()
+		case <-ticker.C:
+			app.refreshAutostart()
 		}
-	}()
+	}
 }
 
 func (app *App) render(state monitor.State) {
 	if state.Checking {
-		systray.SetTitle("…")
+		app.menu.SetTitle("…")
 		app.statusItem.SetTitle(app.texts.Checking())
 		app.refreshItem.Disable()
 		return
@@ -217,10 +235,13 @@ func (app *App) render(state monitor.State) {
 
 	app.refreshItem.Enable()
 	if state.Err != nil {
-		systray.SetTitle("!")
+		// The menu shows a localized explanation; the log keeps the technical
+		// cause, which is usually the only thing a bug report can act on.
+		log.Printf("Homebrew check failed: %v", state.Err)
+		app.menu.SetTitle("!")
 		app.statusItem.SetTitle(app.texts.CheckFailed())
-		app.checkedItem.SetTitle(shortError(state.Err))
-		app.checkedItem.SetTooltip(state.Err.Error())
+		app.checkedItem.SetTitle(checkErrorMessage(app.texts, state.Err))
+		app.checkedItem.SetTooltip(checkErrorTooltip(app.texts, state.Err))
 		app.hideUpdates()
 		return
 	}
@@ -241,10 +262,10 @@ func (app *App) renderResult(result brew.Result) {
 	app.packagesMutex.Unlock()
 
 	if count == 0 {
-		systray.SetTitle("")
+		app.menu.SetTitle("")
 		app.statusItem.SetTitle(app.texts.UpToDate())
 	} else {
-		systray.SetTitle(fmt.Sprintf("%d", count))
+		app.menu.SetTitle(strconv.Itoa(count))
 		app.statusItem.SetTitle(app.texts.UpdatesAvailable(count))
 	}
 
@@ -479,6 +500,41 @@ func autostartToggle(status autostart.Status) (enabled bool, canToggle bool) {
 	}
 }
 
+// checkErrorMessage turns a check failure into a localized menu row. Matching
+// on the sentinel errors of the brew package keeps the user interface free of
+// English error text without making brew depend on localization.
+func checkErrorMessage(texts *localization.Strings, err error) string {
+	switch {
+	case errors.Is(err, brew.ErrNotFound):
+		return texts.HomebrewNotFound()
+	case errors.Is(err, brew.ErrTimeout):
+		return texts.HomebrewTimeout()
+	case errors.Is(err, brew.ErrInvalidOutput):
+		return texts.HomebrewUnexpectedOutput()
+	case errors.Is(err, brew.ErrQueryFailed):
+		return texts.HomebrewQueryFailed()
+	default:
+		return texts.UnexpectedError()
+	}
+}
+
+// checkErrorTooltip explains what the user can do, and falls back to the raw
+// error only when the failure could not be classified.
+func checkErrorTooltip(texts *localization.Strings, err error) string {
+	switch {
+	case errors.Is(err, brew.ErrNotFound):
+		return texts.HomebrewNotFoundTooltip()
+	case errors.Is(err, brew.ErrTimeout):
+		return texts.HomebrewTimeoutTooltip()
+	case errors.Is(err, brew.ErrInvalidOutput):
+		return texts.HomebrewUnexpectedOutputTooltip()
+	default:
+		// A failed brew run carries its own stderr, which is more useful than
+		// any generic sentence Brewtifyer could offer.
+		return shortError(err)
+	}
+}
+
 func packageTitle(texts *localization.Strings, pkg brew.Package) string {
 	installed := strings.Join(pkg.InstalledVersions, ", ")
 	if installed == "" {
@@ -494,11 +550,14 @@ func packageUpdateTooltip(texts *localization.Strings, pkg brew.Package) string 
 	return texts.PackageUpgradeTooltip()
 }
 
+// shortError keeps a raw error readable in a tooltip. It counts runes rather
+// than bytes so that a cut never lands inside a multi-byte character.
 func shortError(err error) string {
+	const maximumRunes = 200
+
 	message := err.Error()
-	const maximumLength = 90
-	if len(message) <= maximumLength {
+	if utf8.RuneCountInString(message) <= maximumRunes {
 		return message
 	}
-	return message[:maximumLength] + "…"
+	return string([]rune(message)[:maximumRunes]) + "…"
 }

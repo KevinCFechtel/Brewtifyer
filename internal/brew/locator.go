@@ -19,7 +19,7 @@ func Locate(configuredPath string) (string, error) {
 	if configuredPath != "" {
 		path, err := validateExecutable(configuredPath)
 		if err != nil {
-			return "", fmt.Errorf("configured Homebrew path is invalid: %w", err)
+			return "", fmt.Errorf("%w: configured path %q is invalid: %w", ErrNotFound, configuredPath, err)
 		}
 		return path, nil
 	}
@@ -36,7 +36,7 @@ func Locate(configuredPath string) (string, error) {
 		}
 	}
 
-	return "", errors.New("not found in PATH or at a standard location")
+	return "", fmt.Errorf("%w: not in PATH or at a standard location", ErrNotFound)
 }
 
 func validateExecutable(path string) (string, error) {

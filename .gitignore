@@ -41,5 +41,6 @@ go.work.sum
 .DS_Store
 *.log
 
-# Local agent instructions
-AGENTS.md
+# Local-only agent notes. AGENTS.md itself is committed so that the
+# architectural invariants and release pitfalls are shared with everyone.
+AGENTS.local.md

@@ -1,3 +1,7 @@
+// Package notification sends native macOS update notifications and remembers
+// which package versions were already announced, so a restart does not repeat
+// them. The remembered state is a cache and is rebuilt whenever it cannot be
+// interpreted.
 package notification
 
 import (
@@ -7,7 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 
@@ -58,18 +62,19 @@ func DefaultStatePath() (string, error) {
 	return filepath.Join(configurationDirectory, "Brewtifyer", "notification-state.json"), nil
 }
 
-func (service *Service) Handle(result brew.Result) error {
+// Handle compares the result against the remembered state and notifies about
+// package versions that were not present before. A discarded or unreadable state
+// file is reported through the returned note; it is not an error, because the
+// only consequence is a repeated notification.
+func (service *Service) Handle(result brew.Result) (note string, err error) {
 	service.mutex.Lock()
 	defer service.mutex.Unlock()
 
-	previous, err := loadState(service.statePath)
-	if err != nil {
-		return err
-	}
+	previous, note := loadState(service.statePath)
 
 	current := packageStates(result.Packages)
 	if equalPackageStates(previous.Packages, current) {
-		return nil
+		return note, nil
 	}
 
 	newPackages := newlyAvailable(result.Packages, previous.Packages)
@@ -77,39 +82,51 @@ func (service *Service) Handle(result brew.Result) error {
 		Version:  stateVersion,
 		Packages: current,
 	}); err != nil {
-		return err
+		return note, err
 	}
 
 	if len(newPackages) > 0 && service.sender != nil {
 		title, body := message(service.texts, newPackages)
 		service.sender.Send(title, body)
 	}
-	return nil
+	return note, nil
 }
 
-func loadState(statePath string) (state, error) {
+// loadState reads the deduplication state. The state is a cache, not a source of
+// truth: anything that cannot be interpreted is discarded and reported through
+// note rather than returned as an error. Returning an error here would be worse
+// than starting over, because Handle would then never reach saveState and
+// notifications would stay broken until the file was deleted by hand. The only
+// cost of discarding is one repeated notification.
+func loadState(statePath string) (loaded state, note string) {
+	fresh := state{Version: stateVersion}
+
 	file, err := os.Open(statePath)
 	if errors.Is(err, os.ErrNotExist) {
-		return state{Version: stateVersion}, nil
+		return fresh, ""
 	}
 	if err != nil {
-		return state{}, fmt.Errorf("notification state could not be opened: %w", err)
+		return fresh, fmt.Sprintf("notification state could not be opened, starting over: %v", err)
 	}
-	defer file.Close()
+	// Read-only handle: a Close error cannot affect the result.
+	defer func() { _ = file.Close() }()
 
 	var saved state
 	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&saved); err != nil {
-		return state{}, fmt.Errorf("notification state could not be read: %w", err)
+		return fresh, fmt.Sprintf("notification state could not be read, starting over: %v", err)
 	}
 	if err := ensureJSONEnd(decoder); err != nil {
-		return state{}, err
+		return fresh, fmt.Sprintf("notification state was incomplete, starting over: %v", err)
 	}
+	// An unknown version belongs to a newer Brewtifyer. Treat it as a cache miss
+	// so that downgrading keeps working.
 	if saved.Version != stateVersion {
-		return state{}, fmt.Errorf("unknown notification state version: %d", saved.Version)
+		return fresh, fmt.Sprintf(
+			"notification state version %d is not supported, starting over", saved.Version)
 	}
 	sortPackageStates(saved.Packages)
-	return saved, nil
+	return saved, ""
 }
 
 func ensureJSONEnd(decoder *json.Decoder) error {
@@ -217,8 +234,8 @@ func equalPackageStates(left, right []packageState) bool {
 }
 
 func sortPackageStates(states []packageState) {
-	sort.Slice(states, func(left, right int) bool {
-		return states[left].key() < states[right].key()
+	slices.SortFunc(states, func(left, right packageState) int {
+		return strings.Compare(left.key(), right.key())
 	})
 }
 

@@ -1,3 +1,7 @@
+// Package localization owns every user-facing string in Brewtifyer. Messages
+// are declared as typed methods so that a missing translation is a compile
+// error rather than a runtime surprise, and the catalogs are embedded into
+// the binary. English is the source and fallback language.
 package localization
 
 import (

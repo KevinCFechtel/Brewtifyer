@@ -62,4 +62,4 @@ install -m 0644 \
   "${ADAPTIVE_ICONSET_DIR}/icon_128x128@2x.png" \
   "${OUTPUT_PREVIEW_PNG}"
 
-echo "App-Icons erstellt: ${OUTPUT_ICNS}, ${OUTPUT_ASSET_CATALOG}, ${OUTPUT_PREVIEW_PNG}"
+echo "App icons created: ${OUTPUT_ICNS}, ${OUTPUT_ASSET_CATALOG}, ${OUTPUT_PREVIEW_PNG}"
