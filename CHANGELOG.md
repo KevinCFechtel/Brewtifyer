@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [1.0.1] - 2026-09-27
+
+### Fixed
+
+- The release pipeline signs the build produced by the tagged commit's
+  workflow run instead of a local build, and verifies its provenance
+  attestation before signing. The cask verification now reads the generated
+  file rather than an installed tap clone, which silently passed.
+
 ## [1.0.0] - 2026-09-27
 
 ### Added
@@ -99,5 +108,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   upgrades in Terminal, native notifications with deduplication, launch at
   login, English and German localization, and signed, notarized releases.
 
-[Unreleased]: https://github.com/KevinCFechtel/Brewtifyer/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/KevinCFechtel/Brewtifyer/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/KevinCFechtel/Brewtifyer/releases/tag/v1.0.1
 [1.0.0]: https://github.com/KevinCFechtel/Brewtifyer/releases/tag/v1.0.0
