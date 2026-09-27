@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [1.0.0] - 2026-09-27
 
 ### Added
 
@@ -91,8 +92,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Long error messages are truncated on a rune boundary, so a tooltip can no
   longer end in a broken multi-byte character.
 
-## [0.1.0] - 2026-08-15
-
 ### Added
 
 - First release: menu bar app showing available Homebrew formula and cask
@@ -100,5 +99,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   upgrades in Terminal, native notifications with deduplication, launch at
   login, English and German localization, and signed, notarized releases.
 
-[Unreleased]: https://github.com/KevinCFechtel/Brewtifyer/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/KevinCFechtel/Brewtifyer/releases/tag/v0.1.0
+[Unreleased]: https://github.com/KevinCFechtel/Brewtifyer/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/KevinCFechtel/Brewtifyer/releases/tag/v1.0.0
