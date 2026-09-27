@@ -3,6 +3,7 @@ package monitor
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -115,6 +116,48 @@ func TestTriggerChecksRegardlessOfInterval(t *testing.T) {
 
 	monitor.Trigger()
 	waitForResult(t, results, "triggered check")
+}
+
+// A trigger that arrives while a check is still running must be served once
+// that check finishes. Dropping it made the menu bar's "Check now" a silent
+// no-op whenever it was picked during a check, and it made every test that
+// clicked right after the startup check timing dependent.
+func TestTriggerDuringRunningCheckIsNotDropped(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var checks atomic.Int32
+	release := make(chan struct{})
+	monitor := New(CheckerFunc(func(context.Context) (brew.Result, error) {
+		if checks.Add(1) == 1 {
+			// Hold the startup check open so that the trigger below is
+			// guaranteed to arrive while a check is running.
+			<-release
+		}
+		return brew.Result{}, nil
+	}), time.Hour, func(State) {})
+
+	go monitor.Run(ctx)
+
+	waitForCount(t, &checks, 1, "startup check to start")
+	monitor.Trigger()
+	close(release)
+	waitForCount(t, &checks, 2, "queued check to run")
+}
+
+func waitForCount(t *testing.T, counter *atomic.Int32, want int32, what string) {
+	t.Helper()
+
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if counter.Load() >= want {
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for %s; checks = %d", what, counter.Load())
 }
 
 func waitForResult(t *testing.T, results <-chan struct{}, what string) {

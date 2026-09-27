@@ -90,10 +90,15 @@ func (monitor *Monitor) Run(ctx context.Context) {
 	}
 }
 
+// Trigger requests a check outside the schedule, for example after the user
+// picked "Check now".
+//
+// A request that arrives while a check is running is queued rather than
+// dropped: the running check started before the user asked, so its data can
+// already be stale by the time it lands. The buffer of one collapses repeated
+// clicks into a single pending check, and check itself keeps the checks
+// serialized, so at most one extra check follows.
 func (monitor *Monitor) Trigger() {
-	if monitor.running.Load() {
-		return
-	}
 	select {
 	case monitor.trigger <- struct{}{}:
 	default:

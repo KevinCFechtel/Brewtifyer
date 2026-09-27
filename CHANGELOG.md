@@ -71,6 +71,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- "Check now" is no longer ignored while a check is running. The request was
+  dropped whenever it arrived before the running check had finished, so a click
+  during the startup check did nothing. It is now queued and served as soon as
+  the running check completes, which also removed a timing-dependent test
+  failure in CI.
 - Background tasks register with the wait group individually instead of relying
   on a hard-coded count, which previously had to be kept in sync by hand and
   would have caused a panic or a hang on the next added task.
