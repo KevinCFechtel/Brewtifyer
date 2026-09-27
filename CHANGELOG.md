@@ -71,6 +71,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The generated Homebrew cask no longer carries the deprecated `verified:`
+  parameter or the string form of `depends_on macos:`. Both made every `brew`
+  command that loaded the cask print a deprecation warning, and the string form
+  is rejected by `brew style`. The macOS requirement is now derived from
+  `APP_DEPLOYMENT_TARGET` instead of spelled out, so it cannot drift from the
+  `LSMinimumSystemVersion` that `brew audit --online` reads out of the bundle.
+- `zap trash:` lists `~/Library/Preferences/dev.kevincfechtel.Brewtifyer.plist`,
+  which AppKit writes for the menu bar item position. `brew uninstall --zap`
+  previously left it behind.
 - "Check now" is no longer ignored while a check is running. The request was
   dropped whenever it arrived before the running check had finished, so a click
   during the startup check did nothing. It is now queued and served as soon as

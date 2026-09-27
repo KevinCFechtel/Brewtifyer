@@ -122,6 +122,25 @@ Local-only notes belong in `AGENTS.local.md`, which is ignored.
   signature, notarization, stapler, Gatekeeper, or extracted-archive checks.
 - Do not run the release script merely as a test: it uses private signing
   credentials and submits an external notarization request.
+- The cask for `kevincfechtel/tap` is produced by `./Build/cask.sh`. Never edit
+  `Casks/brewtifyer.rb` in the tap: the next generation overwrites it silently,
+  without a merge conflict. Corrections belong in `Build/cask.sh`.
+- The order is fixed, because `brew audit --online` downloads the asset and
+  compares it against `sha256`: publish the release and upload the archive
+  first, then generate the cask with `--verify-published`, then push it to the
+  tap. A cask that lands before its asset fails the tap's audit CI.
+- `depends_on macos:` is derived from `APP_DEPLOYMENT_TARGET` rather than
+  written out, because `brew audit --online` reads `LSMinimumSystemVersion` out
+  of the bundle and fails on a mismatch. Moving the deployment target moves the
+  cask, and an unknown target fails the generator instead of guessing.
+- Verify locally before pushing, which works even with an empty `Casks/`:
+  `brew style --cask kevincfechtel/tap` and
+  `brew audit --cask --online --strict --tap=kevincfechtel/tap`. The `--online`
+  part needs a published release.
+- Automating the tap push would need a fine-grained PAT scoped to
+  `homebrew-tap` with contents write. `GITHUB_TOKEN` only covers this
+  repository. A PAT push also triggers the tap's audit workflow, which a
+  `GITHUB_TOKEN` push would not.
 
 ## Assets
 
