@@ -85,6 +85,7 @@ CI_DIR="${REPOSITORY_DIR}/dist/ci"
 UNSIGNED_NAME="Brewtifyer-${APP_VERSION}-unsigned.zip"
 UNSIGNED_ARCHIVE="${CI_DIR}/${UNSIGNED_NAME}"
 ARTIFACT_NAME="Brewtifyer-${RELEASE_TAG}-unsigned"
+DIGEST_RECORD="${ARCHIVE}.unsigned-sha256"
 RELEASE_RUN_ID=""
 UNSIGNED_DIGEST=""
 NOTES_FILE=""
@@ -308,8 +309,19 @@ step "7/10 Signing, notarizing and stapling"
 if [[ "${DRY_RUN}" == "yes" ]]; then
   echo "Would run ./Build/release.sh against the downloaded bundle, which signs"
   echo "and submits an external notarization request. Skipped: not a test target."
+elif [[ -f "${ARCHIVE}" ]] &&
+  [[ -f "${DIGEST_RECORD}" ]] &&
+  [[ "$(cat "${DIGEST_RECORD}")" == "${UNSIGNED_DIGEST}" ]] &&
+  ! confirm "${ARCHIVE_NAME} is already signed from this build. Do it again?"; then
+  # Notarization is a round trip to Apple, so a resumed run should not spend it
+  # again. The recorded digest is what makes skipping safe: an archive left over
+  # from an earlier tag or an earlier workflow run does not match, and is
+  # re-signed rather than published under this run's provenance.
+  echo "Keeping the existing archive."
 else
+  rm -f -- "${DIGEST_RECORD}"
   BREWTIFYER_PREBUILT_APP="${APP_DIR}" "${SCRIPT_DIR}/release.sh"
+  printf '%s\n' "${UNSIGNED_DIGEST}" >"${DIGEST_RECORD}"
 fi
 
 # ---------------------------------------------------------------------------
@@ -325,8 +337,19 @@ else
   # object. Recording both digests is what lets a reader follow the chain:
   # GitHub attests the unsigned archive against the tag, Apple's stapled ticket
   # covers the shipped CDHash, and these two lines name both.
-  CDHASH="$(codesign --display --verbose=4 "${APP_DIR}" 2>&1 |
-    awk -F= '/^CDHash=/ { print $2; exit }')"
+  #
+  # The CDHash is read from the archive that is actually published, not from
+  # dist/, which holds an unsigned bundle whenever the signing step was skipped
+  # on a resumed run.
+  #
+  # awk must not exit early: that closes the pipe, codesign dies from SIGPIPE,
+  # and pipefail plus errexit abort the script with no message at all.
+  CDHASH_DIR="$(mktemp -d /tmp/brewtifyer-cdhash.XXXXXX)"
+  ditto -x -k "${ARCHIVE}" "${CDHASH_DIR}"
+  CDHASH="$(codesign --display --verbose=4 "${CDHASH_DIR}/Brewtifyer.app" 2>&1 |
+    awk -F= '/^CDHash=/ && !seen { print $2; seen = 1 }')"
+  rm -rf -- "${CDHASH_DIR}"
+  [[ -n "${CDHASH}" ]] || fail "Could not read the CDHash from ${ARCHIVE_NAME}."
 
   {
     echo
@@ -350,8 +373,10 @@ else
 
   if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
     echo "Release ${RELEASE_TAG} already exists."
-    if gh release view "${RELEASE_TAG}" --json assets \
-      --jq '.assets[].name' | grep -qx "${ARCHIVE_NAME}"; then
+    # Collected into a variable first: grep -q would close the pipe early,
+    # gh would fail on SIGPIPE, and pipefail would report the asset as absent.
+    RELEASE_ASSETS="$(gh release view "${RELEASE_TAG}" --json assets --jq '.assets[].name')"
+    if grep -qx "${ARCHIVE_NAME}" <<<"${RELEASE_ASSETS}"; then
       echo "Asset ${ARCHIVE_NAME} is already attached; the checksum is verified in step 9."
     else
       confirm "Upload ${ARCHIVE_NAME} to the existing release?" ||
