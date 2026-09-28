@@ -325,7 +325,7 @@ var (
 	messageUpgradeCompleted = &i18n.Message{
 		ID:          "Upgrade.Completed",
 		Description: "Terminal message after Homebrew finished successfully.",
-		Other:       "Update completed. Check Brewtifyer again afterwards.",
+		Other:       "Update completed. Brewtifyer will check again automatically.",
 	}
 	messageUpgradeFailed = &i18n.Message{
 		ID:          "Upgrade.Failed",
