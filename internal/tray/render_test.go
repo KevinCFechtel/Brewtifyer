@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -35,14 +36,14 @@ func newTestApp(t *testing.T, maxVisible int) (*App, *fakeMenu) {
 	return app, menu
 }
 
-func TestRenderResultShowsPackagesAndCount(t *testing.T) {
+func TestRenderResultShowsGroupedPackagesAndCount(t *testing.T) {
 	t.Parallel()
 
 	app, menu := newTestApp(t, 10)
 	app.renderResult(brew.Result{
 		Packages: []brew.Package{
 			makePackage("go", "1.26.5", "1.26.6"),
-			makePackage("node", "24.0.0", "25.0.0"),
+			makeCask("firefox", "147", "148"),
 		},
 		CheckedAt: time.Date(2026, time.September, 27, 9, 0, 0, 0, time.UTC),
 	})
@@ -50,17 +51,23 @@ func TestRenderResultShowsPackagesAndCount(t *testing.T) {
 	if menu.currentTitle() != "2" {
 		t.Errorf("menu bar title = %q, want %q", menu.currentTitle(), "2")
 	}
-	if !visible(t, app.updateItems[0]) || !visible(t, app.updateItems[1]) {
-		t.Error("the two package rows should be visible")
+	if !visible(t, app.formulaeGroup.root) || !visible(t, app.casksGroup.root) {
+		t.Fatal("formula and cask groups should both be visible")
 	}
-	if visible(t, app.updateItems[2]) {
-		t.Error("the third row should stay hidden with only two packages")
+	if got := titleOf(t, app.formulaeGroup.root); got != localization.MustNew("en").FormulaeGroup(1) {
+		t.Errorf("formulae group title = %q", got)
+	}
+	if got := titleOf(t, app.casksGroup.root); got != localization.MustNew("en").CasksGroup(1) {
+		t.Errorf("casks group title = %q", got)
+	}
+	if !visible(t, app.formulaeGroup.rows[0].root) || !visible(t, app.casksGroup.rows[0].root) {
+		t.Fatal("package rows should be visible inside their groups")
+	}
+	if !enabled(t, app.formulaeGroup.rows[0].update) || !enabled(t, app.formulaeGroup.rows[0].info) {
+		t.Fatal("package actions should be enabled")
 	}
 	if !visible(t, app.updateAllItem) || !enabled(t, app.updateAllItem) {
 		t.Error("the update-all row should be visible and enabled")
-	}
-	if visible(t, app.overflow) {
-		t.Error("the overflow row should stay hidden when everything fits")
 	}
 }
 
@@ -68,16 +75,14 @@ func TestRenderResultEmptyClearsMenuBarTitle(t *testing.T) {
 	t.Parallel()
 
 	app, menu := newTestApp(t, 10)
-
-	// Render a populated result first so the empty render has to clean up.
 	app.renderResult(brew.Result{Packages: []brew.Package{makePackage("go", "1", "2")}})
 	app.renderResult(brew.Result{})
 
 	if menu.currentTitle() != "" {
 		t.Errorf("menu bar title = %q, want it empty when up to date", menu.currentTitle())
 	}
-	if visible(t, app.updateItems[0]) {
-		t.Error("package rows should be hidden when nothing is outdated")
+	if visible(t, app.formulaeGroup.root) || visible(t, app.casksGroup.root) {
+		t.Error("package groups should be hidden when nothing is outdated")
 	}
 	if visible(t, app.updateAllItem) {
 		t.Error("the update-all row should be hidden when nothing is outdated")
@@ -87,7 +92,7 @@ func TestRenderResultEmptyClearsMenuBarTitle(t *testing.T) {
 	}
 }
 
-// The configured row limit must be respected and the remainder summarized.
+// The configured row limit is applied independently to each package group.
 func TestRenderResultOverflowRespectsConfiguredLimit(t *testing.T) {
 	t.Parallel()
 
@@ -100,26 +105,24 @@ func TestRenderResultOverflowRespectsConfiguredLimit(t *testing.T) {
 	}
 	app.renderResult(brew.Result{Packages: packages})
 
-	if len(app.updateItems) != limit {
-		t.Fatalf("created %d rows, want %d", len(app.updateItems), limit)
+	if len(app.formulaeGroup.rows) != limit {
+		t.Fatalf("created %d formula rows, want %d", len(app.formulaeGroup.rows), limit)
 	}
-	for index, item := range app.updateItems {
-		if !visible(t, item) {
-			t.Errorf("row %d should be visible", index)
+	for index, row := range app.formulaeGroup.rows {
+		if !visible(t, row.root) {
+			t.Errorf("formula row %d should be visible", index)
 		}
 	}
-	if !visible(t, app.overflow) {
-		t.Fatal("the overflow row should be visible when packages exceed the limit")
+	if !visible(t, app.formulaeGroup.overflow) {
+		t.Fatal("the formula overflow row should be visible")
 	}
-	// 7 packages minus 3 visible rows.
 	want := localization.MustNew("en").MoreUpdates(4)
-	if titleOf(t, app.overflow) != want {
-		t.Errorf("overflow = %q, want %q", titleOf(t, app.overflow), want)
+	if got := titleOf(t, app.formulaeGroup.overflow); got != want {
+		t.Errorf("overflow = %q, want %q", got, want)
 	}
 }
 
-// Without an updater the rows must stay visible but inert, so that a missing
-// Homebrew cannot produce a click that goes nowhere.
+// Without an updater the package is still discoverable, but actions are inert.
 func TestRenderResultDisablesActionsWithoutUpdater(t *testing.T) {
 	t.Parallel()
 
@@ -136,14 +139,35 @@ func TestRenderResultDisablesActionsWithoutUpdater(t *testing.T) {
 
 	app.renderResult(brew.Result{Packages: []brew.Package{makePackage("go", "1", "2")}})
 
-	if enabled(t, app.updateItems[0]) {
-		t.Error("package row should be disabled without an updater")
+	row := app.formulaeGroup.rows[0]
+	if !visible(t, row.root) {
+		t.Fatal("package row should stay visible without an updater")
+	}
+	if enabled(t, row.update) || enabled(t, row.info) || enabled(t, app.formulaeGroup.upgradeAll) {
+		t.Error("package and group actions should be disabled without an updater")
 	}
 	if enabled(t, app.updateAllItem) {
 		t.Error("update-all row should be disabled without an updater")
 	}
-	if !visible(t, app.updateItems[0]) {
-		t.Error("package row should still be visible so the update is discoverable")
+}
+
+func TestRenderResultMarksOnlyChangesSincePreviousCheckAsNew(t *testing.T) {
+	t.Parallel()
+
+	app, _ := newTestApp(t, 10)
+	app.renderResult(brew.Result{Packages: []brew.Package{makePackage("go", "1", "2")}})
+	if got := titleOf(t, app.formulaeGroup.rows[0].root); strings.Contains(got, "NEW") {
+		t.Fatalf("first result must establish a baseline, got %q", got)
+	}
+
+	app.renderResult(brew.Result{Packages: []brew.Package{makePackage("go", "1", "3")}})
+	if got := titleOf(t, app.formulaeGroup.rows[0].root); !strings.Contains(got, "NEW") {
+		t.Fatalf("changed target version should be marked NEW, got %q", got)
+	}
+
+	app.renderResult(brew.Result{Packages: []brew.Package{makePackage("go", "1", "3")}})
+	if got := titleOf(t, app.formulaeGroup.rows[0].root); strings.Contains(got, "NEW") {
+		t.Fatalf("unchanged update should not remain NEW after the next check, got %q", got)
 	}
 }
 
@@ -175,8 +199,8 @@ func TestRenderErrorHidesUpdatesAndMarksMenuBar(t *testing.T) {
 	if menu.currentTitle() != "!" {
 		t.Errorf("menu bar title = %q, want %q", menu.currentTitle(), "!")
 	}
-	if visible(t, app.updateItems[0]) {
-		t.Error("package rows should be hidden after a failed check")
+	if visible(t, app.formulaeGroup.root) || visible(t, app.casksGroup.root) {
+		t.Error("package groups should be hidden after a failed check")
 	}
 	if visible(t, app.updateAllItem) {
 		t.Error("the update-all row should be hidden after a failed check")
@@ -295,6 +319,15 @@ func makePackage(name, installed, current string) brew.Package {
 	}
 }
 
+func makeCask(name, installed, current string) brew.Package {
+	return brew.Package{
+		Name:              name,
+		Kind:              brew.Cask,
+		InstalledVersions: []string{installed},
+		CurrentVersion:    current,
+	}
+}
+
 func utf8Valid(value string) bool {
 	for _, r := range value {
 		if r == '�' {
@@ -304,10 +337,17 @@ func utf8Valid(value string) bool {
 	return true
 }
 
-type stubUpdater struct{ err error }
+type stubUpdater struct {
+	err       error
+	completed chan struct{}
+}
 
 func (updater stubUpdater) UpgradePackage(brew.Package) error { return updater.err }
+func (updater stubUpdater) UpgradeKind(brew.Kind) error       { return updater.err }
 func (updater stubUpdater) UpgradeAll() error                 { return updater.err }
+func (updater stubUpdater) ShowInfo(brew.Package) error       { return updater.err }
+func (updater stubUpdater) Completed() <-chan struct{}        { return updater.completed }
+func (updater stubUpdater) Close()                            {}
 
 type stubAutostart struct {
 	status autostart.Status
