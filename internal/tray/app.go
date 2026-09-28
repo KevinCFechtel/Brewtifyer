@@ -75,10 +75,10 @@ type App struct {
 	autostart     autostart.Controller
 	texts         *localization.Strings
 
-	ctx             context.Context
-	cancel          context.CancelFunc
-	monitor         *monitor.Monitor
-	wait            sync.WaitGroup
+	ctx               context.Context
+	cancel            context.CancelFunc
+	monitor           *monitor.Monitor
+	wait              sync.WaitGroup
 	packagesMutex     sync.RWMutex
 	currentPackages   []brew.Package
 	previousPackages  map[string]string
@@ -98,12 +98,12 @@ type App struct {
 func New(options Options) *App {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &App{
-		menu:          options.Menu,
-		checker:       options.Checker,
-		configuration: options.Config,
-		resultHandler: options.ResultHandler,
-		updater:       options.Updater,
-		autostart:     options.Autostart,
+		menu:             options.Menu,
+		checker:          options.Checker,
+		configuration:    options.Config,
+		resultHandler:    options.ResultHandler,
+		updater:          options.Updater,
+		autostart:        options.Autostart,
 		texts:            options.Texts,
 		ctx:              ctx,
 		cancel:           cancel,
