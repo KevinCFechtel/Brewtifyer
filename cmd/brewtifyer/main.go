@@ -8,7 +8,6 @@ import (
 	"os"
 	"time"
 
-	"fyne.io/systray"
 
 	"github.com/KevinCFechtel/Brewtifyer/internal/autostart"
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
@@ -77,7 +76,7 @@ func run() int {
 		Autostart:     autostart.NewNativeController(),
 		Texts:         texts,
 	})
-	systray.Run(app.OnReady, app.OnExit)
+	trayui.Run(app)
 	return 0
 }
 
