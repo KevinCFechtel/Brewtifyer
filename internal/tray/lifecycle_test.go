@@ -59,6 +59,32 @@ func TestRefreshClickTriggersCheck(t *testing.T) {
 	waitFor(t, "triggered check", func() bool { return checks.Load() >= 2 })
 }
 
+// Finishing an interactive Homebrew upgrade must trigger one fresh check so
+// the menu reflects the packages that are still outdated.
+func TestUpgradeCompletionTriggersCheck(t *testing.T) {
+	t.Parallel()
+
+	var checks atomic.Int32
+	completed := make(chan struct{}, 1)
+	menu := newFakeMenu()
+	configuration := config.Default()
+	configuration.MaxVisibleUpdates = 3
+	app := New(Options{
+		Menu:      menu,
+		Checker:   countingChecker(&checks),
+		Config:    configuration,
+		Updater:   stubUpdater{completed: completed},
+		Autostart: stubAutostart{status: autostart.Disabled},
+		Texts:     localization.MustNew("en"),
+	})
+	app.OnReady()
+	t.Cleanup(app.OnExit)
+
+	waitFor(t, "startup check", func() bool { return checks.Load() >= 1 })
+	completed <- struct{}{}
+	waitFor(t, "post-upgrade check", func() bool { return checks.Load() >= 2 })
+}
+
 // OnExit must return once every background task has stopped. A goroutine that
 // is not registered with the wait group would make this hang, which is what the
 // previous hard-coded counter risked on every added task.
