@@ -19,8 +19,11 @@ Native macOS integrations are kept small and focused.
   laptop does not delay the next check.
 - Refreshes Homebrew metadata only when necessary.
 - Shows the number of available updates directly in the menu bar.
-- Lists outdated packages with installed and available versions.
-- Opens a terminal to update one selected package or all packages at once.
+- Groups outdated formulae and casks, with installed and available versions.
+- Marks updates that appeared or changed since the previous successful check.
+- Opens a package submenu for updating or viewing `brew info` in Terminal.
+- Updates one package, all formulae, all casks, or everything at once.
+- Checks Homebrew again automatically when an interactive update finishes.
 - Keeps Homebrew interactive and respects pinned packages.
 - Sends native macOS notifications for newly discovered package versions.
 - Remembers notification state across restarts to avoid duplicates.
@@ -57,10 +60,14 @@ does not add an icon to the Dock.
 The menu bar icon displays the current number of available updates. Open its
 menu to inspect packages, trigger another check, or quit the app.
 
-Select a package to open a terminal and run its individual Homebrew upgrade.
-Use `Install all updates …` to run `brew upgrade` for all packages. Commands
-remain visible and interactive in the terminal, including any prompts produced
-by Homebrew.
+Open the Formulae or Casks group and select a package to see its update actions.
+Each package submenu can run its individual Homebrew upgrade or show `brew info`
+in Terminal. The group actions update all formulae or all casks, while
+`Install all updates …` still runs `brew upgrade` for everything.
+
+Interactive update commands remain visible in Terminal, including any prompts
+produced by Homebrew. When an update command finishes, Brewtifyer automatically
+checks again so the menu reflects the new Homebrew state.
 
 Enable `Launch at login` to register Brewtifyer as a login item. If macOS
 requires approval, Brewtifyer links directly to the Login Items panel in
@@ -94,7 +101,7 @@ start:
 | Setting | Default | Range | Purpose |
 | --- | --- | --- | --- |
 | `checkIntervalMinutes` | `360` | 15 – 10080 | Time between automatic checks |
-| `maxVisibleUpdates` | `10` | 1 – 50 | Package rows shown in the menu |
+| `maxVisibleUpdates` | `10` | 1 – 50 | Package rows shown per Formulae/Casks group |
 | `terminalApplication` | `Terminal` | any app name | App used for interactive upgrades, for example `iTerm` or `Ghostty` |
 | `brewPath` | `""` | absolute path | Overrides Homebrew autodetection |
 
