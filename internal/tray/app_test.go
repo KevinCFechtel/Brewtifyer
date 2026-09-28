@@ -32,7 +32,8 @@ func TestPackageTitleUsesSelectedLanguage(t *testing.T) {
 		InstalledVersions: []string{"1.26.5"},
 		CurrentVersion:    "1.26.6",
 		Pinned:            true,
-	}, false)	if title != "go: 1.26.5 → 1.26.6 · pinned" {
+	}, false)
+	if title != "go: 1.26.5 → 1.26.6 · pinned" {
 		t.Fatalf("packageTitle() = %q", title)
 	}
 }
