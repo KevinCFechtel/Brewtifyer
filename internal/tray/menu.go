@@ -12,6 +12,8 @@ type MenuItem interface {
 	Hide()
 	Check()
 	Uncheck()
+	AddItem(title, tooltip string) MenuItem
+	AddSeparator()
 	// Clicked is closed or fed when the user activates the item.
 	Clicked() <-chan struct{}
 }
@@ -74,5 +76,9 @@ func (i systrayMenuItem) Show()                     { i.native.Show() }
 func (i systrayMenuItem) Hide()                     { i.native.Hide() }
 func (i systrayMenuItem) Check()                    { i.native.Check() }
 func (i systrayMenuItem) Uncheck()                  { i.native.Uncheck() }
+func (i systrayMenuItem) AddItem(title, tip string) MenuItem {
+	return item(i.native.AddSubMenuItem(title, tip))
+}
+func (i systrayMenuItem) AddSeparator() { i.native.AddSeparator() }
 
 func (i systrayMenuItem) Clicked() <-chan struct{} { return i.native.ClickedCh }
