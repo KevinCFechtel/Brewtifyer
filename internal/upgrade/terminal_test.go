@@ -68,6 +68,43 @@ func TestUpgradeAllUsesPlainUpgradeCommand(t *testing.T) {
 	}
 }
 
+func TestUpgradeKindCreatesScopedCommands(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		kind brew.Kind
+		want string
+	}{
+		{kind: brew.Formula, want: "'/opt/homebrew/bin/brew' 'upgrade' '--formula'"},
+		{kind: brew.Cask, want: "'/opt/homebrew/bin/brew' 'upgrade' '--cask'"},
+	}
+	for _, test := range tests {
+		launcher, openedScript := testLauncher(t)
+		if err := launcher.UpgradeKind(test.kind); err != nil {
+			t.Fatalf("UpgradeKind(%q) error = %v", test.kind, err)
+		}
+		if script := <-openedScript; !strings.Contains(script, test.want) {
+			t.Fatalf("script does not contain %q:\n%s", test.want, script)
+		}
+	}
+}
+
+func TestShowInfoUsesPackageKind(t *testing.T) {
+	t.Parallel()
+
+	launcher, openedScript := testLauncher(t)
+	if err := launcher.ShowInfo(brew.Package{Name: "firefox", Kind: brew.Cask}); err != nil {
+		t.Fatalf("ShowInfo() error = %v", err)
+	}
+	script := <-openedScript
+	if !strings.Contains(script, "'/opt/homebrew/bin/brew' 'info' '--cask' 'firefox'") {
+		t.Fatalf("info script uses unexpected command:\n%s", script)
+	}
+	if strings.Contains(script, "brewtifyer-complete-") {
+		t.Fatalf("info command unexpectedly contains upgrade completion marker:\n%s", script)
+	}
+}
+
 func TestPackageNameIsShellQuoted(t *testing.T) {
 	t.Parallel()
 
@@ -167,6 +204,7 @@ func TestGeneratedCommandHasValidZshSyntax(t *testing.T) {
 		"/opt/homebrew/bin/brew",
 		[]string{"upgrade", "--formula", "example'; echo unsafe; '"},
 		"Homebrew-Update für example'; echo unsafe; '",
+		"",
 		localization.MustNew("de"),
 	)
 	command := exec.CommandContext(t.Context(), zshPath, "-n")
@@ -184,6 +222,7 @@ func TestGeneratedCommandUsesSelectedLanguage(t *testing.T) {
 		"/opt/homebrew/bin/brew",
 		[]string{"upgrade"},
 		texts.UpgradeAllDescription(),
+		"",
 		texts,
 	)
 	for _, expected := range []string{
