@@ -128,6 +128,9 @@ func (launcher *TerminalLauncher) ShowInfo(currentPackage brew.Package) error {
 func (launcher *TerminalLauncher) Completed() <-chan struct{} { return launcher.completed }
 
 func (launcher *TerminalLauncher) Close() {
+	if launcher.closed == nil {
+		return
+	}
 	launcher.closeOnce.Do(func() { close(launcher.closed) })
 }
 
@@ -186,7 +189,7 @@ func (launcher *TerminalLauncher) launch(arguments []string, description string,
 		return err
 	}
 	keepCommand = true
-	if completionPath != "" {
+	if completionPath != "" && launcher.completed != nil {
 		go launcher.watchCompletion(completionPath)
 	}
 	return nil
