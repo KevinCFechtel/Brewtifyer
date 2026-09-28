@@ -191,6 +191,11 @@
     "hash": "sha1-4d7a221f8cd219b6cf9f23f7fbed5da83d19a7b0",
     "other": "Zeitpunkt der letzten erfolgreichen Prüfung"
   },
+  "Tray.MetadataRefreshWarningTooltip": {
+    "description": "Tooltip shown when the outdated package list came from cached Homebrew metadata.",
+    "hash": "sha1-e3a5db3af2b0dd11dff2e3a9a7391a7d6b216f56",
+    "other": "Homebrew-Metadaten konnten nicht aktualisiert werden; zwischengespeicherte Daten wurden verwendet."
+  },
   "Tray.MoreUpdates": {
     "description": "Number of additional updates hidden because the menu shows a limited number of packages.",
     "hash": "sha1-701e5737708efec29b2dcfd59af4874dae22f341",

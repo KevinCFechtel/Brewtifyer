@@ -61,3 +61,43 @@ func TestParseOutdatedRejectsTrailingJSON(t *testing.T) {
 		t.Fatal("ParseOutdated() error = nil, want trailing data error")
 	}
 }
+
+func TestParseOutdatedRequiresRootArrays(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{name: "empty object", input: `{}`},
+		{name: "missing formulae", input: `{"casks":[]}`},
+		{name: "missing casks", input: `{"formulae":[]}`},
+		{name: "null formulae", input: `{"formulae":null,"casks":[]}`},
+		{name: "null casks", input: `{"formulae":[],"casks":null}`},
+		{name: "wrong formulae type", input: `{"formulae":{},"casks":[]}`},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := ParseOutdated(strings.NewReader(test.input))
+			if err == nil {
+				t.Fatal("ParseOutdated() error = nil, want invalid-output error")
+			}
+		})
+	}
+}
+
+func TestParseOutdatedAllowsUnknownRootFields(t *testing.T) {
+	t.Parallel()
+
+	input := `{"formulae":[],"casks":[],"future_field":{"value":1}}`
+	packages, err := ParseOutdated(strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("ParseOutdated() error = %v", err)
+	}
+	if len(packages) != 0 {
+		t.Fatalf("ParseOutdated() returned %d packages, want 0", len(packages))
+	}
+}

@@ -92,9 +92,10 @@ func TestCommandFileIsExecutableAndSelfRemoving(t *testing.T) {
 
 	temporaryDirectory := t.TempDir()
 	launcher := &TerminalLauncher{
-		brewPath: "/opt/homebrew/bin/brew",
-		tempDir:  temporaryDirectory,
-		texts:    localization.MustNew("de"),
+		configuredBrewPath: "/configured/brew",
+		tempDir:            temporaryDirectory,
+		resolveBrew:        func(string) (string, error) { return "/opt/homebrew/bin/brew", nil },
+		texts:              localization.MustNew("de"),
 	}
 	launcher.openFile = func(commandPath string) error {
 		information, err := os.Stat(commandPath)
@@ -124,9 +125,10 @@ func TestFailedOpenRemovesCommandFile(t *testing.T) {
 
 	temporaryDirectory := t.TempDir()
 	launcher := &TerminalLauncher{
-		brewPath: "/opt/homebrew/bin/brew",
-		tempDir:  temporaryDirectory,
-		texts:    localization.MustNew("de"),
+		configuredBrewPath: "/configured/brew",
+		tempDir:            temporaryDirectory,
+		resolveBrew:        func(string) (string, error) { return "/opt/homebrew/bin/brew", nil },
+		texts:              localization.MustNew("de"),
 		openFile: func(string) error {
 			return errors.New("open failed")
 		},
@@ -200,9 +202,10 @@ func testLauncher(t *testing.T) (*TerminalLauncher, <-chan string) {
 
 	openedScript := make(chan string, 1)
 	launcher := &TerminalLauncher{
-		brewPath: "/opt/homebrew/bin/brew",
-		tempDir:  filepath.Clean(t.TempDir()),
-		texts:    localization.MustNew("de"),
+		configuredBrewPath: "/configured/brew",
+		tempDir:            filepath.Clean(t.TempDir()),
+		resolveBrew:        func(string) (string, error) { return "/opt/homebrew/bin/brew", nil },
+		texts:              localization.MustNew("de"),
 	}
 	launcher.openFile = func(commandPath string) error {
 		content, err := os.ReadFile(commandPath)
@@ -213,6 +216,39 @@ func testLauncher(t *testing.T) (*TerminalLauncher, <-chan string) {
 		return nil
 	}
 	return launcher, openedScript
+}
+
+func TestLauncherResolvesHomebrewForEachUpgrade(t *testing.T) {
+	t.Parallel()
+
+	launcher, openedScript := testLauncher(t)
+	calls := 0
+	launcher.resolveBrew = func(configured string) (string, error) {
+		calls++
+		if configured != "/configured/brew" {
+			t.Fatalf("configured path = %q, want %q", configured, "/configured/brew")
+		}
+		if calls == 1 {
+			return "/first/brew", nil
+		}
+		return "/second/brew", nil
+	}
+
+	if err := launcher.UpgradeAll(); err != nil {
+		t.Fatalf("first UpgradeAll() error = %v", err)
+	}
+	if script := <-openedScript; !strings.Contains(script, "'/first/brew' 'upgrade'") {
+		t.Fatalf("first script used unexpected brew path:\n%s", script)
+	}
+	if err := launcher.UpgradeAll(); err != nil {
+		t.Fatalf("second UpgradeAll() error = %v", err)
+	}
+	if script := <-openedScript; !strings.Contains(script, "'/second/brew' 'upgrade'") {
+		t.Fatalf("second script used unexpected brew path:\n%s", script)
+	}
+	if calls != 2 {
+		t.Fatalf("resolve calls = %d, want 2", calls)
+	}
 }
 
 func TestNewTerminalLauncherFallsBackToDefaultApplication(t *testing.T) {

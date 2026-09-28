@@ -98,6 +98,11 @@ var (
 		Description: "Tooltip for a successful Homebrew check.",
 		Other:       "Time of the last successful check",
 	}
+	messageTrayMetadataRefreshWarningTooltip = &i18n.Message{
+		ID:          "Tray.MetadataRefreshWarningTooltip",
+		Description: "Tooltip shown when the outdated package list came from cached Homebrew metadata.",
+		Other:       "Homebrew metadata could not be refreshed; cached data was used.",
+	}
 	messageTrayMoreUpdates = &i18n.Message{
 		ID:          "Tray.MoreUpdates",
 		Description: "Number of additional updates hidden because the menu shows a limited number of packages.",

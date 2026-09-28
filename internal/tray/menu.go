@@ -33,8 +33,14 @@ type Menu interface {
 	Quit()
 }
 
+// Run owns the production systray lifecycle so no package outside tray needs
+// to depend on fyne.io/systray directly.
+func Run(app *App) {
+	systray.Run(app.OnReady, app.OnExit)
+}
+
 // SystrayMenu returns the production menu backed by fyne.io/systray. It may
-// only be used inside systray.Run.
+// only be used from the lifecycle owned by this package.
 func SystrayMenu() Menu { return systrayMenu{} }
 
 type systrayMenu struct{}

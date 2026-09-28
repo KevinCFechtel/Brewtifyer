@@ -8,8 +8,6 @@ import (
 	"os"
 	"time"
 
-	"fyne.io/systray"
-
 	"github.com/KevinCFechtel/Brewtifyer/internal/autostart"
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
 	"github.com/KevinCFechtel/Brewtifyer/internal/buildinfo"
@@ -62,11 +60,9 @@ func run() int {
 	}
 	log.Printf("language: %s", texts.Language())
 
-	brewPath, checker := newChecker(configuration)
-	var updater trayui.Updater
-	if brewPath != "" {
-		updater = upgrade.NewTerminalLauncher(brewPath, configuration.TerminalApplication, texts)
-	}
+	configuredPath := configuredBrewPath(configuration)
+	checker := newChecker(configuredPath)
+	updater := upgrade.NewTerminalLauncher(configuredPath, configuration.TerminalApplication, texts)
 
 	app := trayui.New(trayui.Options{
 		Menu:          trayui.SystrayMenu(),
@@ -77,7 +73,7 @@ func run() int {
 		Autostart:     autostart.NewNativeController(),
 		Texts:         texts,
 	})
-	systray.Run(app.OnReady, app.OnExit)
+	trayui.Run(app)
 	return 0
 }
 
@@ -142,29 +138,40 @@ func newResultHandler(texts *localization.Strings) func(brew.Result) {
 	}
 }
 
-// newChecker locates Homebrew once at startup. When it is missing, the checker
-// keeps reporting the original locate error so that the menu can show a
-// localized explanation while the log keeps the technical detail.
-func newChecker(configuration config.Config) (string, monitor.Checker) {
-	configuredPath := configuration.BrewPath
+func configuredBrewPath(configuration config.Config) string {
 	if fromEnvironment := os.Getenv("BREWTIFYER_BREW_PATH"); fromEnvironment != "" {
 		// The environment variable wins so that a single run can be redirected
 		// without editing the configuration file.
-		configuredPath = fromEnvironment
+		return fromEnvironment
+	}
+	return configuration.BrewPath
+}
+
+// newChecker resolves Homebrew for every check. The lookup is cheap compared
+// with invoking brew and lets a long-running app recover when Homebrew is
+// installed, moved, or replaced without requiring a restart.
+func newChecker(configuredPath string) monitor.Checker {
+	var lastPath string
+
+	if brewPath, err := brew.Locate(configuredPath); err != nil {
+		log.Printf("Homebrew could not be located at startup: %v", err)
+	} else {
+		lastPath = brewPath
+		log.Printf("Homebrew executable: %s", brewPath)
+		logBrewVersion(brew.NewClient(brewPath))
 	}
 
-	brewPath, err := brew.Locate(configuredPath)
-	if err != nil {
-		log.Printf("Homebrew could not be located: %v", err)
-		return "", monitor.CheckerFunc(func(context.Context) (brew.Result, error) {
+	return monitor.CheckerFunc(func(ctx context.Context) (brew.Result, error) {
+		brewPath, err := brew.Locate(configuredPath)
+		if err != nil {
 			return brew.Result{}, err
-		})
-	}
-	log.Printf("Homebrew executable: %s", brewPath)
-
-	client := brew.NewClient(brewPath)
-	logBrewVersion(client)
-	return brewPath, client
+		}
+		if brewPath != lastPath {
+			log.Printf("Homebrew executable changed: %s", brewPath)
+			lastPath = brewPath
+		}
+		return brew.NewClient(brewPath).Check(ctx)
+	})
 }
 
 // logBrewVersion records the Homebrew version for bug reports. Brewtifyer never

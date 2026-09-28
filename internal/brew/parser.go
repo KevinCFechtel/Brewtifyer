@@ -1,6 +1,7 @@
 package brew
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,8 +11,8 @@ import (
 )
 
 type outdatedDocument struct {
-	Formulae []outdatedEntry `json:"formulae"`
-	Casks    []outdatedEntry `json:"casks"`
+	Formulae json.RawMessage `json:"formulae"`
+	Casks    json.RawMessage `json:"casks"`
 }
 
 type outdatedEntry struct {
@@ -38,7 +39,16 @@ func ParseOutdated(reader io.Reader) ([]Package, error) {
 		return nil, fmt.Errorf("%w: output contains invalid trailing data: %w", ErrInvalidOutput, err)
 	}
 
-	packages := make([]Package, 0, len(document.Formulae)+len(document.Casks))
+	formulae, err := decodeEntries(document.Formulae, "formulae")
+	if err != nil {
+		return nil, err
+	}
+	casks, err := decodeEntries(document.Casks, "casks")
+	if err != nil {
+		return nil, err
+	}
+
+	packages := make([]Package, 0, len(formulae)+len(casks))
 	appendEntries := func(entries []outdatedEntry, kind Kind) error {
 		for _, entry := range entries {
 			if strings.TrimSpace(entry.Name) == "" {
@@ -59,10 +69,10 @@ func ParseOutdated(reader io.Reader) ([]Package, error) {
 		return nil
 	}
 
-	if err := appendEntries(document.Formulae, Formula); err != nil {
+	if err := appendEntries(formulae, Formula); err != nil {
 		return nil, err
 	}
-	if err := appendEntries(document.Casks, Cask); err != nil {
+	if err := appendEntries(casks, Cask); err != nil {
 		return nil, err
 	}
 
@@ -74,4 +84,20 @@ func ParseOutdated(reader io.Reader) ([]Package, error) {
 	})
 
 	return packages, nil
+}
+
+func decodeEntries(raw json.RawMessage, field string) ([]outdatedEntry, error) {
+	trimmed := bytes.TrimSpace(raw)
+	if len(trimmed) == 0 {
+		return nil, fmt.Errorf("%w: missing %q array", ErrInvalidOutput, field)
+	}
+	if bytes.Equal(trimmed, []byte("null")) {
+		return nil, fmt.Errorf("%w: %q must be an array, not null", ErrInvalidOutput, field)
+	}
+
+	var entries []outdatedEntry
+	if err := json.Unmarshal(trimmed, &entries); err != nil {
+		return nil, fmt.Errorf("%w: %q is not a valid array: %w", ErrInvalidOutput, field, err)
+	}
+	return entries, nil
 }

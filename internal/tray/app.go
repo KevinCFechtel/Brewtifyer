@@ -269,9 +269,12 @@ func (app *App) renderResult(result brew.Result) {
 		app.statusItem.SetTitle(app.texts.UpdatesAvailable(count))
 	}
 
-	checkedTitle := app.texts.LastChecked(result.CheckedAt, result.Warning != "")
-	if result.Warning != "" {
-		app.checkedItem.SetTooltip(result.Warning)
+	checkedTitle := app.texts.LastChecked(result.CheckedAt, result.Warning != nil)
+	if result.Warning != nil {
+		if result.Warning.Cause != nil {
+			log.Printf("Homebrew check warning: %v", result.Warning.Cause)
+		}
+		app.checkedItem.SetTooltip(checkWarningTooltip(app.texts, result.Warning))
 	} else {
 		app.checkedItem.SetTooltip(app.texts.LastSuccessfulCheckTooltip())
 	}
@@ -362,7 +365,7 @@ func (app *App) upgradeAll() {
 func (app *App) reportUpgradeError(err error) {
 	log.Printf("Homebrew upgrade could not be started: %v", err)
 	app.statusItem.SetTitle(app.texts.UpgradeLaunchFailed())
-	app.statusItem.SetTooltip(err.Error())
+	app.statusItem.SetTooltip(app.texts.UpgradeLaunchFailed())
 }
 
 type autostartMenuState struct {
@@ -429,7 +432,7 @@ func (app *App) openAutostartSettings() {
 func (app *App) reportAutostartError(err error) {
 	log.Printf("launch at login could not be managed: %v", err)
 	app.autostartItem.SetTitle(app.texts.AutostartManageFailed())
-	app.autostartItem.SetTooltip(err.Error())
+	app.autostartItem.SetTooltip(app.texts.AutostartManageFailed())
 	app.autostartItem.Disable()
 }
 
@@ -503,6 +506,18 @@ func autostartToggle(status autostart.Status) (enabled bool, canToggle bool) {
 // checkErrorMessage turns a check failure into a localized menu row. Matching
 // on the sentinel errors of the brew package keeps the user interface free of
 // English error text without making brew depend on localization.
+func checkWarningTooltip(texts *localization.Strings, warning *brew.Warning) string {
+	if warning == nil {
+		return texts.LastSuccessfulCheckTooltip()
+	}
+	switch warning.Kind {
+	case brew.WarningMetadataRefreshFailed:
+		return texts.MetadataRefreshWarningTooltip()
+	default:
+		return texts.UnexpectedError()
+	}
+}
+
 func checkErrorMessage(texts *localization.Strings, err error) string {
 	switch {
 	case errors.Is(err, brew.ErrNotFound):

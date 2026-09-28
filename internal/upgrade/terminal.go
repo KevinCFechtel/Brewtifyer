@@ -23,24 +23,26 @@ const openTimeout = 30 * time.Second
 // terminal application. Homebrew remains interactive and can ask for
 // confirmation or credentials there.
 type TerminalLauncher struct {
-	brewPath    string
-	application string
-	tempDir     string
-	openFile    func(string) error
-	texts       *localization.Strings
+	configuredBrewPath string
+	application        string
+	tempDir            string
+	resolveBrew        func(string) (string, error)
+	openFile           func(string) error
+	texts              *localization.Strings
 }
 
 // NewTerminalLauncher opens upgrades in application, which is the name of a
 // macOS app such as "Terminal", "iTerm" or "Ghostty". An empty name falls back
 // to the system default so a bad configuration cannot disable upgrades.
-func NewTerminalLauncher(brewPath, application string, texts *localization.Strings) *TerminalLauncher {
+func NewTerminalLauncher(configuredBrewPath, application string, texts *localization.Strings) *TerminalLauncher {
 	if application == "" {
 		application = config.DefaultTerminalApplication
 	}
 	launcher := &TerminalLauncher{
-		brewPath:    brewPath,
-		application: application,
-		texts:       texts,
+		configuredBrewPath: configuredBrewPath,
+		application:        application,
+		resolveBrew:        brew.Locate,
+		texts:              texts,
 	}
 	launcher.openFile = func(commandPath string) error {
 		return openInTerminal(launcher.application, commandPath, texts)
@@ -74,6 +76,11 @@ func (launcher *TerminalLauncher) UpgradeAll() error {
 }
 
 func (launcher *TerminalLauncher) launch(arguments []string, description string) error {
+	brewPath, err := launcher.resolveBrew(launcher.configuredBrewPath)
+	if err != nil {
+		return fmt.Errorf("%s: %w", launcher.texts.HomebrewNotFound(), err)
+	}
+
 	commandFile, err := os.CreateTemp(launcher.tempDir, "brewtifyer-upgrade-*.command")
 	if err != nil {
 		return fmt.Errorf("%s: %w", launcher.texts.CreateUpgradeCommandError(), err)
@@ -90,7 +97,7 @@ func (launcher *TerminalLauncher) launch(arguments []string, description string)
 	if err := commandFile.Chmod(0o700); err != nil {
 		return fmt.Errorf("%s: %w", launcher.texts.MakeUpgradeCommandExecutableError(), err)
 	}
-	if _, err := commandFile.WriteString(commandScript(launcher.brewPath, arguments, description, launcher.texts)); err != nil {
+	if _, err := commandFile.WriteString(commandScript(brewPath, arguments, description, launcher.texts)); err != nil {
 		return fmt.Errorf("%s: %w", launcher.texts.WriteUpgradeCommandError(), err)
 	}
 	if err := commandFile.Close(); err != nil {

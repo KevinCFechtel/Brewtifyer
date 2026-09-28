@@ -43,6 +43,9 @@ func (strings *Strings) UpToDate() string { return strings.localize(messageTrayU
 func (strings *Strings) LastSuccessfulCheckTooltip() string {
 	return strings.localize(messageTrayLastSuccessfulCheckTooltip, nil, nil)
 }
+func (strings *Strings) MetadataRefreshWarningTooltip() string {
+	return strings.localize(messageTrayMetadataRefreshWarningTooltip, nil, nil)
+}
 func (strings *Strings) UpgradePackageRunning() string {
 	return strings.localize(messageTrayUpgradePackageRunning, nil, nil)
 }

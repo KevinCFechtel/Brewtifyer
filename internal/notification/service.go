@@ -27,7 +27,9 @@ type Sender interface {
 }
 
 // Service remembers the update set from the last successful check and only
-// notifies about package versions that were not present in that set.
+// attempts to notify about package versions that were not present in that set.
+// The persisted state means "seen by Brewtifyer", not "confirmed delivered":
+// native notification authorization and delivery complete asynchronously.
 type Service struct {
 	statePath string
 	sender    Sender
@@ -62,10 +64,12 @@ func DefaultStatePath() (string, error) {
 	return filepath.Join(configurationDirectory, "Brewtifyer", "notification-state.json"), nil
 }
 
-// Handle compares the result against the remembered state and notifies about
-// package versions that were not present before. A discarded or unreadable state
-// file is reported through the returned note; it is not an error, because the
-// only consequence is a repeated notification.
+// Handle compares the result against the remembered state and attempts a
+// notification for package versions that were not present before. State is
+// saved before delivery because the native sender is asynchronous; this avoids
+// duplicate notifications across restarts even when macOS suppresses one. A
+// discarded or unreadable state file is reported through the returned note; it
+// is not an error, because the only consequence is a repeated notification.
 func (service *Service) Handle(result brew.Result) (note string, err error) {
 	service.mutex.Lock()
 	defer service.mutex.Unlock()

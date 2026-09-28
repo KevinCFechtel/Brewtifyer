@@ -45,6 +45,27 @@ func TestDueUsesWallClock(t *testing.T) {
 
 // A very short interval must not produce a poll interval longer than itself,
 // otherwise the configured interval would be silently ignored.
+// Completed checks must discard the monotonic reading from time.Now. If it is
+// retained, Time.Sub prefers it over wall time and system sleep is invisible to
+// the scheduler on macOS.
+func TestCheckStoresWallClockTimestamp(t *testing.T) {
+	t.Parallel()
+
+	current := time.Now()
+	monitor := New(noopChecker(), time.Hour, func(State) {})
+	monitor.now = func() time.Time { return current }
+
+	monitor.check(context.Background())
+
+	monitor.lastMutex.Lock()
+	stored := monitor.lastCheckedAt
+	monitor.lastMutex.Unlock()
+
+	if stored != stored.Round(0) {
+		t.Fatal("lastCheckedAt retained a monotonic clock reading")
+	}
+}
+
 func TestPollIntervalNeverExceedsInterval(t *testing.T) {
 	t.Parallel()
 

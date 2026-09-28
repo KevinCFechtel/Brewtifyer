@@ -60,7 +60,10 @@ func (client *Client) Check(ctx context.Context) (Result, error) {
 		CheckedAt: client.now(),
 	}
 	if updateErr != nil {
-		result.Warning = fmt.Sprintf("Homebrew metadata could not be updated: %v", updateErr)
+		result.Warning = &Warning{
+			Kind:  WarningMetadataRefreshFailed,
+			Cause: updateErr,
+		}
 	}
 	return result, nil
 }

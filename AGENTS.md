@@ -47,7 +47,9 @@ Local-only notes belong in `AGENTS.local.md`, which is ignored.
 ## Behavior that must remain intact
 
 - Locate Homebrew on Apple Silicon and Intel, with
-  `BREWTIFYER_BREW_PATH` as an explicit override.
+  `BREWTIFYER_BREW_PATH` as an explicit override. Re-resolve Homebrew for
+  each check and interactive upgrade so a running app can recover from an
+  installation or path change without a restart.
 - Parse `brew outdated --json=v2` for formulae and casks.
 - Check immediately and then on the configured interval (six hours by
   default) without overlapping checks. Scheduling compares wall-clock time,

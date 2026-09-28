@@ -153,6 +153,10 @@
     "description": "Tooltip for a successful Homebrew check.",
     "other": "Time of the last successful check"
   },
+  "Tray.MetadataRefreshWarningTooltip": {
+    "description": "Tooltip shown when the outdated package list came from cached Homebrew metadata.",
+    "other": "Homebrew metadata could not be refreshed; cached data was used."
+  },
   "Tray.MoreUpdates": {
     "description": "Number of additional updates hidden because the menu shows a limited number of packages.",
     "one": "… and {{.Count}} more update",
