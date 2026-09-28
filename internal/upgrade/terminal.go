@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/KevinCFechtel/Brewtifyer/internal/brew"
@@ -17,7 +18,11 @@ import (
 
 // openTimeout bounds the `open` call that hands the command file to the
 // terminal application.
-const openTimeout = 30 * time.Second
+const (
+	openTimeout             = 30 * time.Second
+	completionPollInterval  = 500 * time.Millisecond
+	completionWatchLifetime = 24 * time.Hour
+)
 
 // TerminalLauncher writes a short-lived .command file and opens it in a
 // terminal application. Homebrew remains interactive and can ask for
@@ -29,6 +34,9 @@ type TerminalLauncher struct {
 	resolveBrew        func(string) (string, error)
 	openFile           func(string) error
 	texts              *localization.Strings
+	completed          chan struct{}
+	closed             chan struct{}
+	closeOnce          sync.Once
 }
 
 // NewTerminalLauncher opens upgrades in application, which is the name of a
@@ -43,6 +51,8 @@ func NewTerminalLauncher(configuredBrewPath, application string, texts *localiza
 		application:        application,
 		resolveBrew:        brew.Locate,
 		texts:              texts,
+		completed:          make(chan struct{}, 1),
+		closed:             make(chan struct{}),
 	}
 	launcher.openFile = func(commandPath string) error {
 		return openInTerminal(launcher.application, commandPath, texts)
@@ -68,36 +78,107 @@ func (launcher *TerminalLauncher) UpgradePackage(currentPackage brew.Package) er
 		return fmt.Errorf("%s", launcher.texts.UnknownPackageKind(string(currentPackage.Kind)))
 	}
 	arguments = append(arguments, currentPackage.Name)
-	return launcher.launch(arguments, launcher.texts.UpgradePackageDescription(currentPackage.Name))
+	return launcher.launch(arguments, launcher.texts.UpgradePackageDescription(currentPackage.Name), true)
+}
+
+func (launcher *TerminalLauncher) UpgradeKind(kind brew.Kind) error {
+	switch kind {
+	case brew.Formula:
+		return launcher.launch(
+			[]string{"upgrade", "--formula"},
+			launcher.texts.UpgradeFormulaeDescription(),
+			true,
+		)
+	case brew.Cask:
+		return launcher.launch(
+			[]string{"upgrade", "--cask"},
+			launcher.texts.UpgradeCasksDescription(),
+			true,
+		)
+	default:
+		return fmt.Errorf("%s", launcher.texts.UnknownPackageKind(string(kind)))
+	}
 }
 
 func (launcher *TerminalLauncher) UpgradeAll() error {
-	return launcher.launch([]string{"upgrade"}, launcher.texts.UpgradeAllDescription())
+	return launcher.launch([]string{"upgrade"}, launcher.texts.UpgradeAllDescription(), true)
 }
 
-func (launcher *TerminalLauncher) launch(arguments []string, description string) error {
+func (launcher *TerminalLauncher) ShowInfo(currentPackage brew.Package) error {
+	if currentPackage.Name == "" {
+		return fmt.Errorf("%s", launcher.texts.PackageNameMissing())
+	}
+	if strings.ContainsRune(currentPackage.Name, '\x00') {
+		return fmt.Errorf("%s", launcher.texts.PackageNameInvalid())
+	}
+
+	arguments := []string{"info"}
+	switch currentPackage.Kind {
+	case brew.Formula:
+		arguments = append(arguments, "--formula")
+	case brew.Cask:
+		arguments = append(arguments, "--cask")
+	default:
+		return fmt.Errorf("%s", launcher.texts.UnknownPackageKind(string(currentPackage.Kind)))
+	}
+	arguments = append(arguments, currentPackage.Name)
+	return launcher.launch(arguments, launcher.texts.InfoPackageDescription(currentPackage.Name), false)
+}
+
+func (launcher *TerminalLauncher) Completed() <-chan struct{} { return launcher.completed }
+
+func (launcher *TerminalLauncher) Close() {
+	if launcher.closed == nil {
+		return
+	}
+	launcher.closeOnce.Do(func() { close(launcher.closed) })
+}
+
+func (launcher *TerminalLauncher) launch(arguments []string, description string, notifyCompletion bool) error {
 	brewPath, err := launcher.resolveBrew(launcher.configuredBrewPath)
 	if err != nil {
 		return fmt.Errorf("%s: %w", launcher.texts.HomebrewNotFound(), err)
 	}
 
-	commandFile, err := os.CreateTemp(launcher.tempDir, "brewtifyer-upgrade-*.command")
+	commandFile, err := os.CreateTemp(launcher.tempDir, "brewtifyer-command-*.command")
 	if err != nil {
 		return fmt.Errorf("%s: %w", launcher.texts.CreateUpgradeCommandError(), err)
 	}
 	commandPath := commandFile.Name()
+	completionPath := ""
+	if notifyCompletion {
+		completionFile, createErr := os.CreateTemp(launcher.tempDir, "brewtifyer-complete-*")
+		if createErr != nil {
+			_ = commandFile.Close()
+			_ = os.Remove(commandPath)
+			return fmt.Errorf("%s: %w", launcher.texts.CreateUpgradeCommandError(), createErr)
+		}
+		completionPath = completionFile.Name()
+		_ = completionFile.Close()
+		_ = os.Remove(completionPath)
+	}
+
 	keepCommand := false
 	defer func() {
 		_ = commandFile.Close()
 		if !keepCommand {
 			_ = os.Remove(commandPath)
+			if completionPath != "" {
+				_ = os.Remove(completionPath)
+			}
 		}
 	}()
 
 	if err := commandFile.Chmod(0o700); err != nil {
 		return fmt.Errorf("%s: %w", launcher.texts.MakeUpgradeCommandExecutableError(), err)
 	}
-	if _, err := commandFile.WriteString(commandScript(brewPath, arguments, description, launcher.texts)); err != nil {
+	if _, err := commandFile.WriteString(commandScript(
+		brewPath,
+		arguments,
+		description,
+		completionPath,
+		launcher.texts,
+	)); err != nil {
 		return fmt.Errorf("%s: %w", launcher.texts.WriteUpgradeCommandError(), err)
 	}
 	if err := commandFile.Close(); err != nil {
@@ -108,7 +189,37 @@ func (launcher *TerminalLauncher) launch(arguments []string, description string)
 		return err
 	}
 	keepCommand = true
+	if completionPath != "" && launcher.completed != nil {
+		go launcher.watchCompletion(completionPath)
+	}
 	return nil
+}
+
+func (launcher *TerminalLauncher) watchCompletion(path string) {
+	ticker := time.NewTicker(completionPollInterval)
+	defer ticker.Stop()
+	timeout := time.NewTimer(completionWatchLifetime)
+	defer timeout.Stop()
+	defer func() { _ = os.Remove(path) }()
+
+	for {
+		select {
+		case <-launcher.closed:
+			return
+		case <-timeout.C:
+			return
+		case <-ticker.C:
+			if _, err := os.Stat(path); err == nil {
+				select {
+				case launcher.completed <- struct{}{}:
+				default:
+				}
+				return
+			} else if !os.IsNotExist(err) {
+				return
+			}
+		}
+	}
 }
 
 func openInTerminal(application, commandPath string, texts *localization.Strings) error {
@@ -128,12 +239,28 @@ func openInTerminal(application, commandPath string, texts *localization.Strings
 	return nil
 }
 
-func commandScript(brewPath string, arguments []string, description string, texts *localization.Strings) string {
+func commandScript(
+	brewPath string,
+	arguments []string,
+	description string,
+	completionPath string,
+	texts *localization.Strings,
+) string {
 	command := make([]string, 0, len(arguments)+1)
 	command = append(command, brewPath)
 	command = append(command, arguments...)
 	for index := range command {
 		command[index] = shellQuote(command[index])
+	}
+
+	result := ""
+	if completionPath != "" {
+		result = completionSignalScript(completionPath) +
+			"\nif (( update_status == 0 )); then\n" +
+			"  printf '\\n%s\\n' " + shellQuote(texts.UpgradeCompleted()) + "\n" +
+			"else\n" +
+			"  printf " + shellQuote("\n"+texts.UpgradeFailedFormat()+"\n") + " \"$update_status\"\n" +
+			"fi\n"
 	}
 
 	return "#!/bin/zsh\n" +
@@ -142,12 +269,8 @@ func commandScript(brewPath string, arguments []string, description string, text
 		"printf '\\e]0;Brewtifyer Update\\a'\n" +
 		"printf '%s\\n\\n' " + shellQuote(description) + "\n" +
 		strings.Join(command, " ") + "\n" +
-		"update_status=$?\n\n" +
-		"if (( update_status == 0 )); then\n" +
-		"  printf '\\n%s\\n' " + shellQuote(texts.UpgradeCompleted()) + "\n" +
-		"else\n" +
-		"  printf " + shellQuote("\n"+texts.UpgradeFailedFormat()+"\n") + " \"$update_status\"\n" +
-		"fi\n" +
+		"update_status=$?\n" +
+		result +
 		"printf '%s' " + shellQuote(texts.UpgradePressAnyKey()) + "\n" +
 		"read -r -k 1\n" +
 		"printf '\\n'\n" +
@@ -156,4 +279,11 @@ func commandScript(brewPath string, arguments []string, description string, text
 
 func shellQuote(value string) string {
 	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
+}
+
+func completionSignalScript(path string) string {
+	if path == "" {
+		return ""
+	}
+	return "printf '%s\n' \"$update_status\" > " + shellQuote(path) + "\n"
 }

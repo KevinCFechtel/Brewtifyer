@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Outdated packages are grouped into Formulae and Casks, with separate actions
+  to update all formulae or all casks.
+- Each package now has a submenu with its version transition, an interactive
+  update action, and a kind-specific `brew info` action in Terminal.
+- Updates that appear or change target version after a successful check are
+  marked NEW/NEU for the next result.
+- Brewtifyer automatically checks Homebrew again when an interactive update
+  command finishes.
+
+
 ### Changed
 
 - Homebrew is resolved again for every check and interactive upgrade, so a

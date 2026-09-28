@@ -18,7 +18,7 @@ func TestPackageTitle(t *testing.T) {
 		InstalledVersions: []string{"1.26.5"},
 		CurrentVersion:    "1.26.6",
 		Pinned:            true,
-	})
+	}, false)
 	if title != "go: 1.26.5 → 1.26.6 · angeheftet" {
 		t.Fatalf("packageTitle() = %q", title)
 	}
@@ -32,8 +32,21 @@ func TestPackageTitleUsesSelectedLanguage(t *testing.T) {
 		InstalledVersions: []string{"1.26.5"},
 		CurrentVersion:    "1.26.6",
 		Pinned:            true,
-	})
+	}, false)
 	if title != "go: 1.26.5 → 1.26.6 · pinned" {
+		t.Fatalf("packageTitle() = %q", title)
+	}
+}
+
+func TestPackageTitleMarksNewUpdate(t *testing.T) {
+	t.Parallel()
+
+	title := packageTitle(localization.MustNew("de"), brew.Package{
+		Name:              "go",
+		InstalledVersions: []string{"1.26.5"},
+		CurrentVersion:    "1.26.6",
+	}, true)
+	if title != "go: 1.26.5 → 1.26.6 · NEU" {
 		t.Fatalf("packageTitle() = %q", title)
 	}
 }

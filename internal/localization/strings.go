@@ -18,6 +18,48 @@ func (strings *Strings) LastCheckTooltip() string {
 func (strings *Strings) UpgradePackageMenuTooltip() string {
 	return strings.localize(messageTrayUpgradePackageMenuTooltip, nil, nil)
 }
+func (strings *Strings) FormulaeGroup(count int) string {
+	return strings.localize(messageTrayFormulaeGroup, map[string]any{"Count": count}, nil)
+}
+func (strings *Strings) FormulaeGroupTooltip() string {
+	return strings.localize(messageTrayFormulaeGroupTooltip, nil, nil)
+}
+func (strings *Strings) CasksGroup(count int) string {
+	return strings.localize(messageTrayCasksGroup, map[string]any{"Count": count}, nil)
+}
+func (strings *Strings) CasksGroupTooltip() string {
+	return strings.localize(messageTrayCasksGroupTooltip, nil, nil)
+}
+func (strings *Strings) UpgradeFormulae() string {
+	return strings.localize(messageTrayUpgradeFormulae, nil, nil)
+}
+func (strings *Strings) UpgradeFormulaeTooltip() string {
+	return strings.localize(messageTrayUpgradeFormulaeTooltip, nil, nil)
+}
+func (strings *Strings) UpgradeCasks() string {
+	return strings.localize(messageTrayUpgradeCasks, nil, nil)
+}
+func (strings *Strings) UpgradeCasksTooltip() string {
+	return strings.localize(messageTrayUpgradeCasksTooltip, nil, nil)
+}
+func (strings *Strings) PackageDetailsTooltip() string {
+	return strings.localize(messageTrayPackageDetailsTooltip, nil, nil)
+}
+func (strings *Strings) UpdatePackageAction() string {
+	return strings.localize(messageTrayUpdatePackageAction, nil, nil)
+}
+func (strings *Strings) PackageInfoAction() string {
+	return strings.localize(messageTrayPackageInfoAction, nil, nil)
+}
+func (strings *Strings) PackageInfoTooltip() string {
+	return strings.localize(messageTrayPackageInfoTooltip, nil, nil)
+}
+func (strings *Strings) NewBadge() string {
+	return strings.localize(messageTrayNewBadge, nil, nil)
+}
+func (strings *Strings) InfoLaunchFailed() string {
+	return strings.localize(messageTrayInfoLaunchFailed, nil, nil)
+}
 func (strings *Strings) UpgradeAll() string { return strings.localize(messageTrayUpgradeAll, nil, nil) }
 func (strings *Strings) UpgradeAllTooltip() string {
 	return strings.localize(messageTrayUpgradeAllTooltip, nil, nil)
@@ -93,6 +135,15 @@ func (strings *Strings) NotificationUpdateTitle() string {
 }
 func (strings *Strings) UpgradeAllDescription() string {
 	return strings.localize(messageUpgradeAllDescription, nil, nil)
+}
+func (strings *Strings) UpgradeFormulaeDescription() string {
+	return strings.localize(messageUpgradeFormulaeDescription, nil, nil)
+}
+func (strings *Strings) UpgradeCasksDescription() string {
+	return strings.localize(messageUpgradeCasksDescription, nil, nil)
+}
+func (strings *Strings) InfoPackageDescription(name string) string {
+	return strings.localize(messageInfoPackageDescription, map[string]any{"Name": name}, nil)
 }
 func (strings *Strings) UpgradeCompleted() string {
 	return strings.localize(messageUpgradeCompleted, nil, nil)

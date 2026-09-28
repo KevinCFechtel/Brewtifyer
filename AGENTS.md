@@ -54,11 +54,21 @@ Local-only notes belong in `AGENTS.local.md`, which is ignored.
 - Check immediately and then on the configured interval (six hours by
   default) without overlapping checks. Scheduling compares wall-clock time,
   because the monotonic clock stops while macOS sleeps.
-- Display at most `maxVisibleUpdates` package rows (ten by default) and
-  summarize the remainder in the overflow row.
-- Open upgrades in the configured terminal application (Terminal by
-  default) so Homebrew remains visible and interactive.
-- Support both individual upgrades and `brew upgrade` for all packages.
+- Group outdated packages into Formulae and Casks. Display at most
+  `maxVisibleUpdates` package rows (ten by default) in each group and
+  summarize the remainder in that group's overflow row.
+- Each visible package row is a submenu: keep the version summary on the
+  parent and expose separate actions for its interactive upgrade and
+  kind-specific `brew info`.
+- Mark an update as NEW/NEU only when its package/version target first appears
+  relative to the previous successful check. The first successful result is a
+  baseline and must not mark every existing update as new.
+- Open upgrades and package info in the configured terminal application
+  (Terminal by default) so Homebrew remains visible and interactive.
+- Support individual upgrades, all-formula upgrades, all-cask upgrades, and
+  `brew upgrade` for everything.
+- After an interactive upgrade command exits, trigger one fresh Homebrew check
+  from its completion signal. Do not wait for the Terminal window to close.
 - Keep native notification deduplication across restarts. State is stored at
   `~/Library/Application Support/Brewtifyer/notification-state.json`.
 - Treat `autostart.NotFound` as registerable: the menu must stay enabled and a
