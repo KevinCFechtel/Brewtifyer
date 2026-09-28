@@ -67,10 +67,9 @@ func DefaultStatePath() (string, error) {
 // Handle compares the result against the remembered state and attempts a
 // notification for package versions that were not present before. State is
 // saved before delivery because the native sender is asynchronous; this avoids
-// duplicate notifications across restarts even when macOS suppresses one.
- // file is reported through the returned note; it is not an error, because the
-// file is reported through the returned note; it is not an error, because the
-// only consequence is a repeated notification.
+// duplicate notifications across restarts even when macOS suppresses one. A
+// discarded or unreadable state file is reported through the returned note; it
+// is not an error, because the only consequence is a repeated notification.
 func (service *Service) Handle(result brew.Result) (note string, err error) {
 	service.mutex.Lock()
 	defer service.mutex.Unlock()
