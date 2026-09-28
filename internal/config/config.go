@@ -37,7 +37,7 @@ const (
 type Config struct {
 	// CheckInterval is the wall-clock time between automatic checks.
 	CheckInterval time.Duration
-	// MaxVisibleUpdates caps the package rows rendered in the menu.
+	// MaxVisibleUpdates caps the package rows rendered in each package group.
 	MaxVisibleUpdates int
 	// TerminalApplication is the app opened for interactive upgrades.
 	TerminalApplication string
