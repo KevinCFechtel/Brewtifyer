@@ -344,13 +344,17 @@ func (app *App) renderResult(result brew.Result) {
 func (app *App) hideUpdates() {
 	app.packagesMutex.Lock()
 	app.currentPackages = nil
+	for _, group := range []*packageMenuGroup{&app.formulaeGroup, &app.casksGroup} {
+		for _, row := range group.rows {
+			row.packageIndex = -1
+		}
+	}
 	app.packagesMutex.Unlock()
 
 	for _, group := range []*packageMenuGroup{&app.formulaeGroup, &app.casksGroup} {
 		group.root.Hide()
 		group.upgradeAll.Disable()
 		for _, row := range group.rows {
-			row.packageIndex = -1
 			row.root.Hide()
 			row.update.Disable()
 			row.info.Disable()
@@ -629,7 +633,19 @@ func (app *App) renderPackageGroup(
 	}
 
 	if len(indexes) == 0 {
+		app.packagesMutex.Lock()
+		for _, row := range group.rows {
+			row.packageIndex = -1
+		}
+		app.packagesMutex.Unlock()
 		group.root.Hide()
+		group.upgradeAll.Disable()
+		for _, row := range group.rows {
+			row.root.Hide()
+			row.update.Disable()
+			row.info.Disable()
+		}
+		group.overflow.Hide()
 		return
 	}
 
@@ -660,7 +676,8 @@ func (app *App) renderPackageGroup(
 		pkg := packages[packageIndex]
 		row.packageIndex = packageIndex
 		row.root.SetTitle(packageTitle(app.texts, pkg, newPackages[packageIdentity(pkg)]))
-		row.root.SetTooltip(packageUpdateTooltip(app.texts, pkg))
+		row.root.SetTooltip(app.texts.PackageDetailsTooltip())
+		row.update.SetTooltip(packageUpdateTooltip(app.texts, pkg))
 		if app.updater != nil {
 			row.update.Enable()
 			row.info.Enable()
