@@ -147,6 +147,23 @@ func TestRenderResultDisablesActionsWithoutUpdater(t *testing.T) {
 	}
 }
 
+func TestRenderResultLocalizesMetadataRefreshWarning(t *testing.T) {
+	t.Parallel()
+
+	app, _ := newTestApp(t, 10)
+	app.renderResult(brew.Result{
+		CheckedAt: time.Date(2026, time.September, 27, 9, 0, 0, 0, time.UTC),
+		Warning: &brew.Warning{
+			Kind:  brew.WarningMetadataRefreshFailed,
+			Cause: errors.New("offline"),
+		},
+	})
+
+	if got := tooltipOf(t, app.checkedItem); got != localization.MustNew("en").MetadataRefreshWarningTooltip() {
+		t.Errorf("warning tooltip = %q, want localized metadata warning", got)
+	}
+}
+
 func TestRenderErrorHidesUpdatesAndMarksMenuBar(t *testing.T) {
 	t.Parallel()
 
