@@ -365,7 +365,7 @@ func (app *App) upgradeAll() {
 func (app *App) reportUpgradeError(err error) {
 	log.Printf("Homebrew upgrade could not be started: %v", err)
 	app.statusItem.SetTitle(app.texts.UpgradeLaunchFailed())
-	app.statusItem.SetTooltip(err.Error())
+	app.statusItem.SetTooltip(app.texts.UpgradeLaunchFailed())
 }
 
 type autostartMenuState struct {
@@ -432,7 +432,7 @@ func (app *App) openAutostartSettings() {
 func (app *App) reportAutostartError(err error) {
 	log.Printf("launch at login could not be managed: %v", err)
 	app.autostartItem.SetTitle(app.texts.AutostartManageFailed())
-	app.autostartItem.SetTooltip(err.Error())
+	app.autostartItem.SetTooltip(app.texts.AutostartManageFailed())
 	app.autostartItem.Disable()
 }
 
