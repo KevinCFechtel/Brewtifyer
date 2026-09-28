@@ -24,7 +24,11 @@ const autostartRefreshInterval = 5 * time.Second
 
 type Updater interface {
 	UpgradePackage(brew.Package) error
+	UpgradeKind(brew.Kind) error
 	UpgradeAll() error
+	ShowInfo(brew.Package) error
+	Completed() <-chan struct{}
+	Close()
 }
 
 // Options collects everything the menu bar application depends on. It is a
@@ -47,6 +51,21 @@ type Options struct {
 	Texts *localization.Strings
 }
 
+type packageMenuRow struct {
+	root         MenuItem
+	update       MenuItem
+	info         MenuItem
+	packageIndex int
+}
+
+type packageMenuGroup struct {
+	root       MenuItem
+	upgradeAll MenuItem
+	rows       []*packageMenuRow
+	overflow   MenuItem
+	kind       brew.Kind
+}
+
 type App struct {
 	menu          Menu
 	checker       monitor.Checker
@@ -60,14 +79,16 @@ type App struct {
 	cancel          context.CancelFunc
 	monitor         *monitor.Monitor
 	wait            sync.WaitGroup
-	packagesMutex   sync.RWMutex
-	currentPackages []brew.Package
+	packagesMutex     sync.RWMutex
+	currentPackages   []brew.Package
+	previousPackages  map[string]string
+	hasPreviousResult bool
 
 	statusItem            MenuItem
 	checkedItem           MenuItem
-	updateItems           []MenuItem
-	overflow              MenuItem
-	updateAllItem         MenuItem
+	formulaeGroup          packageMenuGroup
+	casksGroup             packageMenuGroup
+	updateAllItem          MenuItem
 	refreshItem           MenuItem
 	autostartItem         MenuItem
 	autostartSettingsItem MenuItem
@@ -83,9 +104,10 @@ func New(options Options) *App {
 		resultHandler: options.ResultHandler,
 		updater:       options.Updater,
 		autostart:     options.Autostart,
-		texts:         options.Texts,
-		ctx:           ctx,
-		cancel:        cancel,
+		texts:            options.Texts,
+		ctx:              ctx,
+		cancel:           cancel,
+		previousPackages: make(map[string]string),
 	}
 }
 
@@ -112,15 +134,9 @@ func (app *App) buildMenu() {
 	app.checkedItem.Disable()
 	app.menu.AddSeparator()
 
-	for range app.configuration.MaxVisibleUpdates {
-		item := app.menu.AddItem("", app.texts.UpgradePackageMenuTooltip())
-		item.Disable()
-		item.Hide()
-		app.updateItems = append(app.updateItems, item)
-	}
-	app.overflow = app.menu.AddItem("", "")
-	app.overflow.Disable()
-	app.overflow.Hide()
+	app.formulaeGroup = app.buildPackageGroup(brew.Formula)
+	app.casksGroup = app.buildPackageGroup(brew.Cask)
+
 	app.updateAllItem = app.menu.AddItem(app.texts.UpgradeAll(), app.texts.UpgradeAllTooltip())
 	app.updateAllItem.Disable()
 	app.updateAllItem.Hide()
@@ -140,6 +156,9 @@ func (app *App) buildMenu() {
 
 func (app *App) OnExit() {
 	app.cancel()
+	if app.updater != nil {
+		app.updater.Close()
+	}
 	app.wait.Wait()
 }
 
@@ -170,15 +189,40 @@ func (app *App) startBackgroundTasks() {
 		}
 	})
 
-	for index, item := range app.updateItems {
+	for _, group := range []*packageMenuGroup{&app.formulaeGroup, &app.casksGroup} {
+		currentGroup := group
 		app.goroutine(func() {
-			app.consumeClicks(item, func() { app.upgradePackage(index) })
+			app.consumeClicks(currentGroup.upgradeAll, func() { app.upgradeKind(currentGroup.kind) })
 		})
+		for _, row := range currentGroup.rows {
+			currentRow := row
+			app.goroutine(func() {
+				app.consumeClicks(currentRow.update, func() { app.upgradePackageRow(currentRow) })
+			})
+			app.goroutine(func() {
+				app.consumeClicks(currentRow.info, func() { app.showPackageInfo(currentRow) })
+			})
+		}
 	}
 
 	app.goroutine(func() {
 		app.consumeClicks(app.updateAllItem, app.upgradeAll)
 	})
+	if app.updater != nil {
+		app.goroutine(func() {
+			for {
+				select {
+				case <-app.ctx.Done():
+					return
+				case _, open := <-app.updater.Completed():
+					if !open {
+						return
+					}
+					app.monitor.Trigger()
+				}
+			}
+		})
+	}
 
 	app.goroutine(app.watchAutostart)
 }
@@ -280,29 +324,9 @@ func (app *App) renderResult(result brew.Result) {
 	}
 	app.checkedItem.SetTitle(checkedTitle)
 
-	for index, item := range app.updateItems {
-		if index >= count {
-			item.Disable()
-			item.Hide()
-			continue
-		}
-		item.SetTitle(packageTitle(app.texts, result.Packages[index]))
-		item.SetTooltip(packageUpdateTooltip(app.texts, result.Packages[index]))
-		if app.updater != nil {
-			item.Enable()
-		} else {
-			item.Disable()
-		}
-		item.Show()
-	}
-
-	remaining := count - len(app.updateItems)
-	if remaining > 0 {
-		app.overflow.SetTitle(app.texts.MoreUpdates(remaining))
-		app.overflow.Show()
-	} else {
-		app.overflow.Hide()
-	}
+	newPackages := app.rememberPackageChanges(result.Packages)
+	app.renderPackageGroup(&app.formulaeGroup, result.Packages, newPackages)
+	app.renderPackageGroup(&app.casksGroup, result.Packages, newPackages)
 
 	if count > 0 {
 		if app.updater != nil {
@@ -322,33 +346,71 @@ func (app *App) hideUpdates() {
 	app.currentPackages = nil
 	app.packagesMutex.Unlock()
 
-	for _, item := range app.updateItems {
-		item.Disable()
-		item.Hide()
+	for _, group := range []*packageMenuGroup{&app.formulaeGroup, &app.casksGroup} {
+		group.root.Hide()
+		group.upgradeAll.Disable()
+		for _, row := range group.rows {
+			row.packageIndex = -1
+			row.root.Hide()
+			row.update.Disable()
+			row.info.Disable()
+		}
+		group.overflow.Hide()
 	}
-	app.overflow.Hide()
 	app.updateAllItem.Disable()
 	app.updateAllItem.Hide()
 }
 
-func (app *App) upgradePackage(index int) {
+func (app *App) packageForRow(row *packageMenuRow) (brew.Package, bool) {
+	app.packagesMutex.RLock()
+	defer app.packagesMutex.RUnlock()
+
+	if row == nil || row.packageIndex < 0 || row.packageIndex >= len(app.currentPackages) {
+		return brew.Package{}, false
+	}
+	return app.currentPackages[row.packageIndex], true
+}
+
+func (app *App) upgradePackageRow(row *packageMenuRow) {
 	if app.updater == nil {
 		return
 	}
-
-	app.packagesMutex.RLock()
-	if index < 0 || index >= len(app.currentPackages) {
-		app.packagesMutex.RUnlock()
+	currentPackage, ok := app.packageForRow(row)
+	if !ok {
 		return
 	}
-	currentPackage := app.currentPackages[index]
-	app.packagesMutex.RUnlock()
 
 	if err := app.updater.UpgradePackage(currentPackage); err != nil {
 		app.reportUpgradeError(err)
 		return
 	}
 	app.statusItem.SetTitle(app.texts.UpgradePackageRunning())
+}
+
+func (app *App) showPackageInfo(row *packageMenuRow) {
+	if app.updater == nil {
+		return
+	}
+	currentPackage, ok := app.packageForRow(row)
+	if !ok {
+		return
+	}
+	if err := app.updater.ShowInfo(currentPackage); err != nil {
+		log.Printf("Homebrew info could not be opened: %v", err)
+		app.statusItem.SetTitle(app.texts.InfoLaunchFailed())
+		app.statusItem.SetTooltip(app.texts.InfoLaunchFailed())
+	}
+}
+
+func (app *App) upgradeKind(kind brew.Kind) {
+	if app.updater == nil {
+		return
+	}
+	if err := app.updater.UpgradeKind(kind); err != nil {
+		app.reportUpgradeError(err)
+		return
+	}
+	app.statusItem.SetTitle(app.texts.UpgradeAllRunning())
 }
 
 func (app *App) upgradeAll() {
@@ -503,6 +565,125 @@ func autostartToggle(status autostart.Status) (enabled bool, canToggle bool) {
 	}
 }
 
+func (app *App) buildPackageGroup(kind brew.Kind) packageMenuGroup {
+	group := packageMenuGroup{kind: kind}
+	switch kind {
+	case brew.Formula:
+		group.root = app.menu.AddItem(app.texts.FormulaeGroup(0), app.texts.FormulaeGroupTooltip())
+		group.upgradeAll = group.root.AddItem(app.texts.UpgradeFormulae(), app.texts.UpgradeFormulaeTooltip())
+	case brew.Cask:
+		group.root = app.menu.AddItem(app.texts.CasksGroup(0), app.texts.CasksGroupTooltip())
+		group.upgradeAll = group.root.AddItem(app.texts.UpgradeCasks(), app.texts.UpgradeCasksTooltip())
+	}
+	group.root.Hide()
+	group.upgradeAll.Disable()
+	group.root.AddSeparator()
+
+	for range app.configuration.MaxVisibleUpdates {
+		row := &packageMenuRow{packageIndex: -1}
+		row.root = group.root.AddItem("", app.texts.PackageDetailsTooltip())
+		row.update = row.root.AddItem(app.texts.UpdatePackageAction(), app.texts.UpgradePackageMenuTooltip())
+		row.info = row.root.AddItem(app.texts.PackageInfoAction(), app.texts.PackageInfoTooltip())
+		row.root.Hide()
+		row.update.Disable()
+		row.info.Disable()
+		group.rows = append(group.rows, row)
+	}
+	group.overflow = group.root.AddItem("", "")
+	group.overflow.Disable()
+	group.overflow.Hide()
+	return group
+}
+
+func (app *App) rememberPackageChanges(packages []brew.Package) map[string]bool {
+	app.packagesMutex.Lock()
+	defer app.packagesMutex.Unlock()
+
+	newPackages := make(map[string]bool)
+	next := make(map[string]string, len(packages))
+	for _, pkg := range packages {
+		key := packageIdentity(pkg)
+		next[key] = pkg.CurrentVersion
+		if app.hasPreviousResult {
+			previousVersion, existed := app.previousPackages[key]
+			if !existed || previousVersion != pkg.CurrentVersion {
+				newPackages[key] = true
+			}
+		}
+	}
+	app.previousPackages = next
+	app.hasPreviousResult = true
+	return newPackages
+}
+
+func (app *App) renderPackageGroup(
+	group *packageMenuGroup,
+	packages []brew.Package,
+	newPackages map[string]bool,
+) {
+	indexes := make([]int, 0)
+	for index, pkg := range packages {
+		if pkg.Kind == group.kind {
+			indexes = append(indexes, index)
+		}
+	}
+
+	if len(indexes) == 0 {
+		group.root.Hide()
+		return
+	}
+
+	switch group.kind {
+	case brew.Formula:
+		group.root.SetTitle(app.texts.FormulaeGroup(len(indexes)))
+	case brew.Cask:
+		group.root.SetTitle(app.texts.CasksGroup(len(indexes)))
+	}
+	group.root.Show()
+	if app.updater != nil {
+		group.upgradeAll.Enable()
+	} else {
+		group.upgradeAll.Disable()
+	}
+
+	app.packagesMutex.Lock()
+	defer app.packagesMutex.Unlock()
+	for rowIndex, row := range group.rows {
+		if rowIndex >= len(indexes) {
+			row.packageIndex = -1
+			row.root.Hide()
+			row.update.Disable()
+			row.info.Disable()
+			continue
+		}
+		packageIndex := indexes[rowIndex]
+		pkg := packages[packageIndex]
+		row.packageIndex = packageIndex
+		row.root.SetTitle(packageTitle(app.texts, pkg, newPackages[packageIdentity(pkg)]))
+		row.root.SetTooltip(packageUpdateTooltip(app.texts, pkg))
+		if app.updater != nil {
+			row.update.Enable()
+			row.info.Enable()
+		} else {
+			row.update.Disable()
+			row.info.Disable()
+		}
+		row.root.Show()
+	}
+
+	remaining := len(indexes) - len(group.rows)
+	if remaining > 0 {
+		group.overflow.SetTitle(app.texts.MoreUpdates(remaining))
+		group.overflow.Show()
+	} else {
+		group.overflow.Hide()
+	}
+}
+
+func packageIdentity(pkg brew.Package) string {
+	return string(pkg.Kind) + "\x00" + pkg.Name
+}
+
 // checkErrorMessage turns a check failure into a localized menu row. Matching
 // on the sentinel errors of the brew package keeps the user interface free of
 // English error text without making brew depend on localization.
@@ -550,12 +731,16 @@ func checkErrorTooltip(texts *localization.Strings, err error) string {
 	}
 }
 
-func packageTitle(texts *localization.Strings, pkg brew.Package) string {
+func packageTitle(texts *localization.Strings, pkg brew.Package, isNew bool) string {
 	installed := strings.Join(pkg.InstalledVersions, ", ")
 	if installed == "" {
 		installed = "?"
 	}
-	return texts.PackageTitle(pkg.Name, installed, pkg.CurrentVersion, pkg.Pinned)
+	title := texts.PackageTitle(pkg.Name, installed, pkg.CurrentVersion, pkg.Pinned)
+	if isNew {
+		title += " · " + texts.NewBadge()
+	}
+	return title
 }
 
 func packageUpdateTooltip(texts *localization.Strings, pkg brew.Package) string {
