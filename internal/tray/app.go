@@ -86,9 +86,9 @@ type App struct {
 
 	statusItem            MenuItem
 	checkedItem           MenuItem
-	formulaeGroup          packageMenuGroup
-	casksGroup             packageMenuGroup
-	updateAllItem          MenuItem
+	formulaeGroup         packageMenuGroup
+	casksGroup            packageMenuGroup
+	updateAllItem         MenuItem
 	refreshItem           MenuItem
 	autostartItem         MenuItem
 	autostartSettingsItem MenuItem
