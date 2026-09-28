@@ -230,14 +230,3 @@ func tooltipOf(t *testing.T, item MenuItem) string {
 	_, tooltip, _, _, _ := fakeItem(t, item).state()
 	return tooltip
 }
-
-func childOf(t *testing.T, item MenuItem, index int) *fakeMenuItem {
-	t.Helper()
-	parent := fakeItem(t, item)
-	parent.mutex.Lock()
-	defer parent.mutex.Unlock()
-	if index < 0 || index >= len(parent.children) {
-		t.Fatalf("child index %d out of range (len=%d)", index, len(parent.children))
-	}
-	return parent.children[index]
-}
