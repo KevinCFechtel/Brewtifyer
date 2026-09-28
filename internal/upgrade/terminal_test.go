@@ -93,9 +93,9 @@ func TestCommandFileIsExecutableAndSelfRemoving(t *testing.T) {
 	temporaryDirectory := t.TempDir()
 	launcher := &TerminalLauncher{
 		configuredBrewPath: "/configured/brew",
-		tempDir:  temporaryDirectory,
-		resolveBrew: func(string) (string, error) { return "/opt/homebrew/bin/brew", nil },
-		texts:       localization.MustNew("de"),
+		tempDir:            temporaryDirectory,
+		resolveBrew:        func(string) (string, error) { return "/opt/homebrew/bin/brew", nil },
+		texts:              localization.MustNew("de"),
 	}
 	launcher.openFile = func(commandPath string) error {
 		information, err := os.Stat(commandPath)
@@ -126,9 +126,9 @@ func TestFailedOpenRemovesCommandFile(t *testing.T) {
 	temporaryDirectory := t.TempDir()
 	launcher := &TerminalLauncher{
 		configuredBrewPath: "/configured/brew",
-		tempDir:  temporaryDirectory,
-		resolveBrew: func(string) (string, error) { return "/opt/homebrew/bin/brew", nil },
-		texts:       localization.MustNew("de"),
+		tempDir:            temporaryDirectory,
+		resolveBrew:        func(string) (string, error) { return "/opt/homebrew/bin/brew", nil },
+		texts:              localization.MustNew("de"),
 		openFile: func(string) error {
 			return errors.New("open failed")
 		},
