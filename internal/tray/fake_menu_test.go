@@ -94,13 +94,15 @@ func (menu *fakeMenu) quitCount() int {
 }
 
 type fakeMenuItem struct {
-	mutex   sync.Mutex
-	title   string
-	tooltip string
-	enabled bool
-	visible bool
-	checked bool
-	clicks  chan struct{}
+	mutex      sync.Mutex
+	title      string
+	tooltip    string
+	enabled    bool
+	visible    bool
+	checked    bool
+	clicks     chan struct{}
+	children   []*fakeMenuItem
+	separators int
 }
 
 func (item *fakeMenuItem) SetTitle(title string) {
@@ -149,6 +151,27 @@ func (item *fakeMenuItem) Uncheck() {
 	item.mutex.Lock()
 	defer item.mutex.Unlock()
 	item.checked = false
+}
+
+func (item *fakeMenuItem) AddItem(title, tooltip string) MenuItem {
+	item.mutex.Lock()
+	defer item.mutex.Unlock()
+
+	child := &fakeMenuItem{
+		title:   title,
+		tooltip: tooltip,
+		enabled: true,
+		visible: true,
+		clicks:  make(chan struct{}, 1),
+	}
+	item.children = append(item.children, child)
+	return child
+}
+
+func (item *fakeMenuItem) AddSeparator() {
+	item.mutex.Lock()
+	defer item.mutex.Unlock()
+	item.separators++
 }
 
 func (item *fakeMenuItem) Clicked() <-chan struct{} { return item.clicks }
@@ -206,4 +229,15 @@ func tooltipOf(t *testing.T, item MenuItem) string {
 	t.Helper()
 	_, tooltip, _, _, _ := fakeItem(t, item).state()
 	return tooltip
+}
+
+func childOf(t *testing.T, item MenuItem, index int) *fakeMenuItem {
+	t.Helper()
+	parent := fakeItem(t, item)
+	parent.mutex.Lock()
+	defer parent.mutex.Unlock()
+	if index < 0 || index >= len(parent.children) {
+		t.Fatalf("child index %d out of range (len=%d)", index, len(parent.children))
+	}
+	return parent.children[index]
 }
