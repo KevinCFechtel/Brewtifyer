@@ -33,6 +33,76 @@ var (
 		Description: "Initial tooltip for package update menu entries.",
 		Other:       "Update in Terminal",
 	}
+	messageTrayFormulaeGroup = &i18n.Message{
+		ID:          "Tray.FormulaeGroup",
+		Description: "Menu group containing outdated Homebrew formulae.",
+		Other:       "Formulae ({{.Count}})",
+	}
+	messageTrayFormulaeGroupTooltip = &i18n.Message{
+		ID:          "Tray.FormulaeGroupTooltip",
+		Description: "Tooltip for the outdated formulae group.",
+		Other:       "Outdated Homebrew formulae",
+	}
+	messageTrayCasksGroup = &i18n.Message{
+		ID:          "Tray.CasksGroup",
+		Description: "Menu group containing outdated Homebrew casks.",
+		Other:       "Casks ({{.Count}})",
+	}
+	messageTrayCasksGroupTooltip = &i18n.Message{
+		ID:          "Tray.CasksGroupTooltip",
+		Description: "Tooltip for the outdated casks group.",
+		Other:       "Outdated Homebrew casks",
+	}
+	messageTrayUpgradeFormulae = &i18n.Message{
+		ID:          "Tray.UpgradeFormulae",
+		Description: "Menu action that installs all available formula updates.",
+		Other:       "Install all formula updates …",
+	}
+	messageTrayUpgradeFormulaeTooltip = &i18n.Message{
+		ID:          "Tray.UpgradeFormulaeTooltip",
+		Description: "Tooltip for upgrading all outdated formulae.",
+		Other:       "Run brew upgrade --formula in Terminal",
+	}
+	messageTrayUpgradeCasks = &i18n.Message{
+		ID:          "Tray.UpgradeCasks",
+		Description: "Menu action that installs all available cask updates.",
+		Other:       "Install all cask updates …",
+	}
+	messageTrayUpgradeCasksTooltip = &i18n.Message{
+		ID:          "Tray.UpgradeCasksTooltip",
+		Description: "Tooltip for upgrading all outdated casks.",
+		Other:       "Run brew upgrade --cask in Terminal",
+	}
+	messageTrayPackageDetailsTooltip = &i18n.Message{
+		ID:          "Tray.PackageDetailsTooltip",
+		Description: "Tooltip for a package submenu containing update details and actions.",
+		Other:       "Package update details and actions",
+	}
+	messageTrayUpdatePackageAction = &i18n.Message{
+		ID:          "Tray.UpdatePackageAction",
+		Description: "Submenu action that updates one package.",
+		Other:       "Update in Terminal …",
+	}
+	messageTrayPackageInfoAction = &i18n.Message{
+		ID:          "Tray.PackageInfoAction",
+		Description: "Submenu action that shows Homebrew information for one package.",
+		Other:       "Homebrew info …",
+	}
+	messageTrayPackageInfoTooltip = &i18n.Message{
+		ID:          "Tray.PackageInfoTooltip",
+		Description: "Tooltip for showing brew info for one package.",
+		Other:       "Show brew info in Terminal",
+	}
+	messageTrayNewBadge = &i18n.Message{
+		ID:          "Tray.NewBadge",
+		Description: "Short marker appended to an update that appeared since the previous successful check.",
+		Other:       "NEW",
+	}
+	messageTrayInfoLaunchFailed = &i18n.Message{
+		ID:          "Tray.InfoLaunchFailed",
+		Description: "Status shown when package information could not be opened in Terminal.",
+		Other:       "Homebrew info could not be opened",
+	}
 	messageTrayUpgradeAll = &i18n.Message{
 		ID:          "Tray.UpgradeAll",
 		Description: "Menu action that installs all available Homebrew updates.",
@@ -236,6 +306,21 @@ var (
 		ID:          "Upgrade.AllDescription",
 		Description: "Heading in Terminal when all packages are being upgraded.",
 		Other:       "All Homebrew updates",
+	}
+	messageUpgradeFormulaeDescription = &i18n.Message{
+		ID:          "Upgrade.FormulaeDescription",
+		Description: "Heading in Terminal when all outdated formulae are being upgraded.",
+		Other:       "All Homebrew formula updates",
+	}
+	messageUpgradeCasksDescription = &i18n.Message{
+		ID:          "Upgrade.CasksDescription",
+		Description: "Heading in Terminal when all outdated casks are being upgraded.",
+		Other:       "All Homebrew cask updates",
+	}
+	messageInfoPackageDescription = &i18n.Message{
+		ID:          "Info.PackageDescription",
+		Description: "Heading in Terminal when Homebrew information for one package is shown.",
+		Other:       "Homebrew info for {{.Name}}",
 	}
 	messageUpgradeCompleted = &i18n.Message{
 		ID:          "Upgrade.Completed",
