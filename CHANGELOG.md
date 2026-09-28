@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Changed
+
+- Homebrew is resolved again for every check and interactive upgrade, so a
+  running Brewtifyer can recover when Homebrew is installed, moved, or
+  replaced without requiring an app restart.
+- Non-fatal Homebrew metadata refresh failures are represented as typed
+  warnings and localized by the tray layer; technical causes remain in the log.
+- The systray lifecycle is fully contained in `internal/tray`, keeping the
+  entry point independent of the concrete menu bar library.
+- CI pins `golangci-lint` and `govulncheck` to explicit versions so an
+  external tool release cannot change the result for an unchanged commit.
+
+### Fixed
+
+- Automatic scheduling now strips Go's monotonic clock component before
+  comparing timestamps. On macOS that monotonic clock pauses during system
+  sleep, so retaining it could still postpone a six-hour check after wake even
+  though the scheduler was intended to use wall-clock time.
+- The Homebrew JSON v2 parser now requires the top-level `formulae` and
+  `casks` arrays. A future incompatible schema can no longer be mistaken for
+  a valid response with zero available updates.
+- Raw upgrade and launch-at-login errors are no longer shown directly in menu
+  tooltips; localized UI text is used while the technical cause is logged.
+
 ## [1.0.1] - 2026-09-27
 
 ### Fixed
