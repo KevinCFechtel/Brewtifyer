@@ -63,6 +63,10 @@
     "description": "Error prefix when the temporary update command cannot be written.",
     "other": "The update command could not be written"
   },
+  "Info.PackageDescription": {
+    "description": "Heading in Terminal when Homebrew information for one package is shown.",
+    "other": "Homebrew info for {{.Name}}"
+  },
   "Notification.PackageWithVersion": {
     "description": "Notification body for one package with its available target version.",
     "other": "{{.Name}} can be updated to {{.Version}}."
@@ -125,6 +129,14 @@
     "description": "Tooltip explaining the minimum macOS version for launch at login.",
     "other": "This feature requires macOS 13 or later"
   },
+  "Tray.CasksGroup": {
+    "description": "Menu group containing outdated Homebrew casks.",
+    "other": "Casks ({{.Count}})"
+  },
+  "Tray.CasksGroupTooltip": {
+    "description": "Tooltip for the outdated casks group.",
+    "other": "Outdated Homebrew casks"
+  },
   "Tray.CheckFailed": {
     "description": "Status shown when checking Homebrew failed.",
     "other": "Check failed"
@@ -136,6 +148,18 @@
   "Tray.CurrentStatusTooltip": {
     "description": "Tooltip for the current Homebrew status row.",
     "other": "Current Homebrew status"
+  },
+  "Tray.FormulaeGroup": {
+    "description": "Menu group containing outdated Homebrew formulae.",
+    "other": "Formulae ({{.Count}})"
+  },
+  "Tray.FormulaeGroupTooltip": {
+    "description": "Tooltip for the outdated formulae group.",
+    "other": "Outdated Homebrew formulae"
+  },
+  "Tray.InfoLaunchFailed": {
+    "description": "Status shown when package information could not be opened in Terminal.",
+    "other": "Homebrew info could not be opened"
   },
   "Tray.LastCheckTooltip": {
     "description": "Tooltip for the time of the last Homebrew check.",
@@ -162,6 +186,10 @@
     "one": "… and {{.Count}} more update",
     "other": "… and {{.Count}} more updates"
   },
+  "Tray.NewBadge": {
+    "description": "Short marker appended to an update that appeared since the previous successful check.",
+    "other": "NEW"
+  },
   "Tray.NotChecked": {
     "description": "Status before Homebrew has been checked for the first time.",
     "other": "Not checked yet"
@@ -173,6 +201,18 @@
   "Tray.OpenLoginItemsTooltip": {
     "description": "Tooltip for opening Login Items settings to approve Brewtifyer.",
     "other": "Allow Brewtifyer to launch at login in macOS"
+  },
+  "Tray.PackageDetailsTooltip": {
+    "description": "Tooltip for a package submenu containing update details and actions.",
+    "other": "Package update details and actions"
+  },
+  "Tray.PackageInfoAction": {
+    "description": "Submenu action that shows Homebrew information for one package.",
+    "other": "Homebrew info …"
+  },
+  "Tray.PackageInfoTooltip": {
+    "description": "Tooltip for showing brew info for one package.",
+    "other": "Show brew info in Terminal"
   },
   "Tray.PackageTitle": {
     "description": "Package row containing its name, installed version, and available version.",
@@ -214,6 +254,10 @@
     "description": "Status shown when no Homebrew updates are available.",
     "other": "Homebrew is up to date"
   },
+  "Tray.UpdatePackageAction": {
+    "description": "Submenu action that updates one package.",
+    "other": "Update in Terminal …"
+  },
   "Tray.UpdatesAvailable": {
     "description": "Homebrew status containing the number of available updates.",
     "one": "{{.Count}} update available",
@@ -231,6 +275,22 @@
     "description": "Tooltip for the action that runs brew upgrade.",
     "other": "Run brew upgrade in Terminal"
   },
+  "Tray.UpgradeCasks": {
+    "description": "Menu action that installs all available cask updates.",
+    "other": "Install all cask updates …"
+  },
+  "Tray.UpgradeCasksTooltip": {
+    "description": "Tooltip for upgrading all outdated casks.",
+    "other": "Run brew upgrade --cask in Terminal"
+  },
+  "Tray.UpgradeFormulae": {
+    "description": "Menu action that installs all available formula updates.",
+    "other": "Install all formula updates …"
+  },
+  "Tray.UpgradeFormulaeTooltip": {
+    "description": "Tooltip for upgrading all outdated formulae.",
+    "other": "Run brew upgrade --formula in Terminal"
+  },
   "Tray.UpgradeLaunchFailed": {
     "description": "Status shown when the update Terminal could not be opened.",
     "other": "The update Terminal could not be opened"
@@ -247,6 +307,10 @@
     "description": "Heading in Terminal when all packages are being upgraded.",
     "other": "All Homebrew updates"
   },
+  "Upgrade.CasksDescription": {
+    "description": "Heading in Terminal when all outdated casks are being upgraded.",
+    "other": "All Homebrew cask updates"
+  },
   "Upgrade.Completed": {
     "description": "Terminal message after Homebrew finished successfully.",
     "other": "Update completed. Check Brewtifyer again afterwards."
@@ -254,6 +318,10 @@
   "Upgrade.Failed": {
     "description": "Terminal printf format after Homebrew exited unsuccessfully; %d is replaced by the exit status.",
     "other": "Update exited with status %d."
+  },
+  "Upgrade.FormulaeDescription": {
+    "description": "Heading in Terminal when all outdated formulae are being upgraded.",
+    "other": "All Homebrew formula updates"
   },
   "Upgrade.PackageDescription": {
     "description": "Heading in Terminal when one package is being upgraded.",
