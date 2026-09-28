@@ -47,8 +47,14 @@ func TestClientCheckUsesCachedDataWhenUpdateFails(t *testing.T) {
 	if result.CheckedAt != checkedAt {
 		t.Errorf("CheckedAt = %v, want %v", result.CheckedAt, checkedAt)
 	}
-	if result.Warning == "" {
-		t.Error("Warning is empty, want update warning")
+	if result.Warning == nil {
+		t.Fatal("Warning = nil, want metadata refresh warning")
+	}
+	if result.Warning.Kind != WarningMetadataRefreshFailed {
+		t.Errorf("Warning.Kind = %v, want %v", result.Warning.Kind, WarningMetadataRefreshFailed)
+	}
+	if !errors.Is(result.Warning.Cause, runner.errors[0]) {
+		t.Errorf("Warning.Cause = %v, want %v", result.Warning.Cause, runner.errors[0])
 	}
 
 	wantCalls := []runnerCall{
