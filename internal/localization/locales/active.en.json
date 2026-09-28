@@ -313,7 +313,7 @@
   },
   "Upgrade.Completed": {
     "description": "Terminal message after Homebrew finished successfully.",
-    "other": "Update completed. Check Brewtifyer again afterwards."
+    "other": "Update completed. Brewtifyer will check again automatically."
   },
   "Upgrade.Failed": {
     "description": "Terminal printf format after Homebrew exited unsuccessfully; %d is replaced by the exit status.",
