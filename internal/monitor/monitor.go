@@ -114,7 +114,15 @@ func (monitor *Monitor) due() bool {
 	if monitor.lastCheckedAt.IsZero() {
 		return true
 	}
-	return monitor.now().Sub(monitor.lastCheckedAt) >= monitor.interval
+	return wallClock(monitor.now()).Sub(wallClock(monitor.lastCheckedAt)) >= monitor.interval
+}
+
+// wallClock strips Go's monotonic clock reading. Scheduling is intentionally
+// based on civil time because mach_absolute_time does not advance while macOS
+// sleeps; retaining the monotonic component would make a closed laptop appear
+// to have slept for zero time.
+func wallClock(value time.Time) time.Time {
+	return value.Round(0)
 }
 
 func (monitor *Monitor) check(ctx context.Context) {
@@ -129,7 +137,7 @@ func (monitor *Monitor) check(ctx context.Context) {
 	// The attempt counts as the last check even when it failed, so that a
 	// permanently broken Homebrew is not retried every pollInterval.
 	monitor.lastMutex.Lock()
-	monitor.lastCheckedAt = monitor.now()
+	monitor.lastCheckedAt = wallClock(monitor.now())
 	monitor.lastMutex.Unlock()
 
 	if err != nil {
