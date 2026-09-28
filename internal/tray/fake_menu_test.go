@@ -201,3 +201,9 @@ func titleOf(t *testing.T, item MenuItem) string {
 	t.Helper()
 	return fakeItem(t, item).currentTitle()
 }
+
+func tooltipOf(t *testing.T, item MenuItem) string {
+	t.Helper()
+	_, tooltip, _, _, _ := fakeItem(t, item).state()
+	return tooltip
+}
