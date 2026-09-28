@@ -51,18 +51,17 @@ type systrayMenu struct{}
 // rests on an entry. Brewtifyer therefore disables tooltips for menu items at
 // the production adapter boundary. The status-item tooltip itself remains
 // enabled via systrayMenu.SetTooltip.
-
 func (systrayMenu) SetTemplateIcon(icon []byte) {
 	// macOS renders a template image in the correct color for the current
 	// appearance, so the same bytes serve as both the regular and template icon.
 	systray.SetTemplateIcon(icon, icon)
 }
 
-func (systrayMenu) SetTitle(title string)              { systray.SetTitle(title) }
-func (systrayMenu) SetTooltip(tooltip string)          { systray.SetTooltip(tooltip) }
-func (systrayMenu) SetRemovalAllowed(allowed bool)     { systray.SetRemovalAllowed(allowed) }
-func (systrayMenu) AddSeparator()                      { systray.AddSeparator() }
-func (systrayMenu) Quit()                              { systray.Quit() }
+func (systrayMenu) SetTitle(title string)          { systray.SetTitle(title) }
+func (systrayMenu) SetTooltip(tooltip string)      { systray.SetTooltip(tooltip) }
+func (systrayMenu) SetRemovalAllowed(allowed bool) { systray.SetRemovalAllowed(allowed) }
+func (systrayMenu) AddSeparator()                  { systray.AddSeparator() }
+func (systrayMenu) Quit()                          { systray.Quit() }
 func (systrayMenu) AddItem(title, _ string) MenuItem {
 	return item(systray.AddMenuItem(title, ""))
 }
@@ -75,14 +74,14 @@ func item(native *systray.MenuItem) MenuItem { return systrayMenuItem{native: na
 
 type systrayMenuItem struct{ native *systray.MenuItem }
 
-func (i systrayMenuItem) SetTitle(title string)     { i.native.SetTitle(title) }
-func (i systrayMenuItem) SetTooltip(string) {}
-func (i systrayMenuItem) Enable()                   { i.native.Enable() }
-func (i systrayMenuItem) Disable()                  { i.native.Disable() }
-func (i systrayMenuItem) Show()                     { i.native.Show() }
-func (i systrayMenuItem) Hide()                     { i.native.Hide() }
-func (i systrayMenuItem) Check()                    { i.native.Check() }
-func (i systrayMenuItem) Uncheck()                  { i.native.Uncheck() }
+func (i systrayMenuItem) SetTitle(title string) { i.native.SetTitle(title) }
+func (i systrayMenuItem) SetTooltip(string)     {}
+func (i systrayMenuItem) Enable()               { i.native.Enable() }
+func (i systrayMenuItem) Disable()              { i.native.Disable() }
+func (i systrayMenuItem) Show()                 { i.native.Show() }
+func (i systrayMenuItem) Hide()                 { i.native.Hide() }
+func (i systrayMenuItem) Check()                { i.native.Check() }
+func (i systrayMenuItem) Uncheck()              { i.native.Uncheck() }
 func (i systrayMenuItem) AddItem(title, _ string) MenuItem {
 	return item(i.native.AddSubMenuItem(title, ""))
 }
