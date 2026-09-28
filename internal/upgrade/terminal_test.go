@@ -103,6 +103,9 @@ func TestShowInfoUsesPackageKind(t *testing.T) {
 	if strings.Contains(script, "brewtifyer-complete-") {
 		t.Fatalf("info command unexpectedly contains upgrade completion marker:\n%s", script)
 	}
+	if strings.Contains(script, "Update completed") {
+		t.Fatalf("info command unexpectedly contains upgrade completion messaging:\n%s", script)
+	}
 }
 
 func TestPackageNameIsShellQuoted(t *testing.T) {
@@ -204,7 +207,7 @@ func TestGeneratedCommandHasValidZshSyntax(t *testing.T) {
 		"/opt/homebrew/bin/brew",
 		[]string{"upgrade", "--formula", "example'; echo unsafe; '"},
 		"Homebrew-Update für example'; echo unsafe; '",
-		"",
+		"/tmp/brewtifyer-test-complete",
 		localization.MustNew("de"),
 	)
 	command := exec.CommandContext(t.Context(), zshPath, "-n")
@@ -222,7 +225,7 @@ func TestGeneratedCommandUsesSelectedLanguage(t *testing.T) {
 		"/opt/homebrew/bin/brew",
 		[]string{"upgrade"},
 		texts.UpgradeAllDescription(),
-		"",
+		"/tmp/brewtifyer-test-complete",
 		texts,
 	)
 	for _, expected := range []string{
