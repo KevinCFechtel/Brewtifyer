@@ -227,7 +227,7 @@ func TestGeneratedCommandUsesSelectedLanguage(t *testing.T) {
 	)
 	for _, expected := range []string{
 		"All Homebrew updates",
-		"Update completed. Check Brewtifyer again afterwards.",
+		"Update completed. Brewtifyer will check again automatically.",
 		"Press any key to close the window …",
 	} {
 		if !strings.Contains(script, expected) {
