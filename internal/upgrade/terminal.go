@@ -253,6 +253,16 @@ func commandScript(
 		command[index] = shellQuote(command[index])
 	}
 
+	result := ""
+	if completionPath != "" {
+		result = completionSignalScript(completionPath) +
+			"\nif (( update_status == 0 )); then\n" +
+			"  printf '\\n%s\\n' " + shellQuote(texts.UpgradeCompleted()) + "\n" +
+			"else\n" +
+			"  printf " + shellQuote("\n"+texts.UpgradeFailedFormat()+"\n") + " \"$update_status\"\n" +
+			"fi\n"
+	}
+
 	return "#!/bin/zsh\n" +
 		"set -u\n" +
 		"trap 'rm -f -- \"$0\"' EXIT\n\n" +
@@ -260,12 +270,7 @@ func commandScript(
 		"printf '%s\\n\\n' " + shellQuote(description) + "\n" +
 		strings.Join(command, " ") + "\n" +
 		"update_status=$?\n" +
-		completionSignalScript(completionPath) +
-		"\nif (( update_status == 0 )); then\n" +
-		"  printf '\\n%s\\n' " + shellQuote(texts.UpgradeCompleted()) + "\n" +
-		"else\n" +
-		"  printf " + shellQuote("\n"+texts.UpgradeFailedFormat()+"\n") + " \"$update_status\"\n" +
-		"fi\n" +
+		result +
 		"printf '%s' " + shellQuote(texts.UpgradePressAnyKey()) + "\n" +
 		"read -r -k 1\n" +
 		"printf '\\n'\n" +
