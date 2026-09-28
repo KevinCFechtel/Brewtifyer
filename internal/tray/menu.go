@@ -76,7 +76,7 @@ func item(native *systray.MenuItem) MenuItem { return systrayMenuItem{native: na
 type systrayMenuItem struct{ native *systray.MenuItem }
 
 func (i systrayMenuItem) SetTitle(title string) { i.native.SetTitle(title) }
-func (i systrayMenuItem) SetTooltip(string)      {}
+func (i systrayMenuItem) SetTooltip(string)     {}
 func (i systrayMenuItem) Enable()                { i.native.Enable() }
 func (i systrayMenuItem) Disable()               { i.native.Disable() }
 func (i systrayMenuItem) Show()                  { i.native.Show() }
