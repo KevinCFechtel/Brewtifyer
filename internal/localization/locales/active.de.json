@@ -390,8 +390,8 @@
   },
   "Upgrade.Completed": {
     "description": "Terminal message after Homebrew finished successfully.",
-    "hash": "sha1-08ac05266c8415ae996631247c5be56823477eb2",
-    "other": "Update abgeschlossen. Prüfe Brewtifyer anschließend erneut."
+    "hash": "sha1-02c13c915a679c24ef3fec82f15aa2ebb0a7ea7f",
+    "other": "Update abgeschlossen. Brewtifyer prüft automatisch erneut."
   },
   "Upgrade.Failed": {
     "description": "Terminal printf format after Homebrew exited unsuccessfully; %d is replaced by the exit status.",
