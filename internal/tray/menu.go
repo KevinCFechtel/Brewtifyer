@@ -51,7 +51,6 @@ type systrayMenu struct{}
 // rests on an entry. Brewtifyer therefore disables tooltips for menu items at
 // the production adapter boundary. The status-item tooltip itself remains
 // enabled via systrayMenu.SetTooltip.
-
 func (systrayMenu) SetTemplateIcon(icon []byte) {
 	// macOS renders a template image in the correct color for the current
 	// appearance, so the same bytes serve as both the regular and template icon.
