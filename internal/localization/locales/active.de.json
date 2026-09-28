@@ -79,6 +79,11 @@
     "hash": "sha1-301cdd28ac9082cf04426dff5b975b418bc5c7d4",
     "other": "Der Update-Befehl konnte nicht geschrieben werden"
   },
+  "Info.PackageDescription": {
+    "description": "Heading in Terminal when Homebrew information for one package is shown.",
+    "hash": "sha1-273086a63270678081ea023a84babcdc421b3437",
+    "other": "Homebrew-Info für {{.Name}}"
+  },
   "Notification.PackageWithVersion": {
     "description": "Notification body for one package with its available target version.",
     "hash": "sha1-5b6852271b994510be1819f95df8d90b3e5810d7",
@@ -156,6 +161,16 @@
     "hash": "sha1-9bfce7f0732d64a2eacdc8009ad705b7bce77910",
     "other": "Diese Funktion benötigt macOS 13 oder neuer"
   },
+  "Tray.CasksGroup": {
+    "description": "Menu group containing outdated Homebrew casks.",
+    "hash": "sha1-029a22581f45b9a8957fb051045ae5f128f26ab2",
+    "other": "Casks ({{.Count}})"
+  },
+  "Tray.CasksGroupTooltip": {
+    "description": "Tooltip for the outdated casks group.",
+    "hash": "sha1-fdd828cf0ac73b6ec95a7c96a59a098de827036b",
+    "other": "Veraltete Homebrew-Casks"
+  },
   "Tray.CheckFailed": {
     "description": "Status shown when checking Homebrew failed.",
     "hash": "sha1-a7330562de7b5933da0e2c2cade2193485c90c3f",
@@ -170,6 +185,21 @@
     "description": "Tooltip for the current Homebrew status row.",
     "hash": "sha1-b365d030bffbb913cc280f81aff8a5f132735ccd",
     "other": "Aktueller Homebrew-Status"
+  },
+  "Tray.FormulaeGroup": {
+    "description": "Menu group containing outdated Homebrew formulae.",
+    "hash": "sha1-77f0c5947f3d0a27d6200f500a6d9d38de54a5bf",
+    "other": "Formeln ({{.Count}})"
+  },
+  "Tray.FormulaeGroupTooltip": {
+    "description": "Tooltip for the outdated formulae group.",
+    "hash": "sha1-a313431780161c350f50bc1c9ce8659544596c76",
+    "other": "Veraltete Homebrew-Formeln"
+  },
+  "Tray.InfoLaunchFailed": {
+    "description": "Status shown when package information could not be opened in Terminal.",
+    "hash": "sha1-31a8a637b0dd641241f25221939a22c1685dff21",
+    "other": "Homebrew-Info konnte nicht geöffnet werden"
   },
   "Tray.LastCheckTooltip": {
     "description": "Tooltip for the time of the last Homebrew check.",
@@ -202,6 +232,11 @@
     "one": "… und {{.Count}} weiteres Update",
     "other": "… und {{.Count}} weitere Updates"
   },
+  "Tray.NewBadge": {
+    "description": "Short marker appended to an update that appeared since the previous successful check.",
+    "hash": "sha1-05c5d7a9a31a94185e2b4f1d6a8eeee09df36a49",
+    "other": "NEU"
+  },
   "Tray.NotChecked": {
     "description": "Status before Homebrew has been checked for the first time.",
     "hash": "sha1-f903d5f41189a6b7d743d51e882cc97462dbc95a",
@@ -216,6 +251,21 @@
     "description": "Tooltip for opening Login Items settings to approve Brewtifyer.",
     "hash": "sha1-41dadc329c8674ecbea1c68453b63cdb798a5ae6",
     "other": "Autostart für Brewtifyer in macOS freigeben"
+  },
+  "Tray.PackageDetailsTooltip": {
+    "description": "Tooltip for a package submenu containing update details and actions.",
+    "hash": "sha1-c3bbd9b630154f3f1ed4413a3dc58d73bb8f8fbe",
+    "other": "Details und Aktionen für dieses Paket-Update"
+  },
+  "Tray.PackageInfoAction": {
+    "description": "Submenu action that shows Homebrew information for one package.",
+    "hash": "sha1-c76102941d26748d61e64aad23eca51820330028",
+    "other": "Homebrew-Info …"
+  },
+  "Tray.PackageInfoTooltip": {
+    "description": "Tooltip for showing brew info for one package.",
+    "hash": "sha1-797d068645d8b476190e1f72b9cecd980224ddcc",
+    "other": "brew info im Terminal anzeigen"
   },
   "Tray.PackageTitle": {
     "description": "Package row containing its name, installed version, and available version.",
@@ -267,6 +317,11 @@
     "hash": "sha1-15277f9a5279eee28fba400ec6549fe89debcfb6",
     "other": "Homebrew ist aktuell"
   },
+  "Tray.UpdatePackageAction": {
+    "description": "Submenu action that updates one package.",
+    "hash": "sha1-f9583ba01ed88b77363b153e6211d9761f8cc6df",
+    "other": "Im Terminal aktualisieren …"
+  },
   "Tray.UpdatesAvailable": {
     "description": "Homebrew status containing the number of available updates.",
     "hash": "sha1-ec78696d34985ed4ce80a3982d2b2f0c3bc077ba",
@@ -288,6 +343,26 @@
     "hash": "sha1-e99806c7d5aa03ed4d598ae18b69765e85430065",
     "other": "brew upgrade im Terminal ausführen"
   },
+  "Tray.UpgradeCasks": {
+    "description": "Menu action that installs all available cask updates.",
+    "hash": "sha1-771e4ae0ed2d39adc245b4768166546266166aaa",
+    "other": "Alle Cask-Updates installieren …"
+  },
+  "Tray.UpgradeCasksTooltip": {
+    "description": "Tooltip for upgrading all outdated casks.",
+    "hash": "sha1-bc21033632098d5f16b9f73eedf93f765182b130",
+    "other": "brew upgrade --cask im Terminal ausführen"
+  },
+  "Tray.UpgradeFormulae": {
+    "description": "Menu action that installs all available formula updates.",
+    "hash": "sha1-3bc006572cfdd20303cd11cf9e95622186efb0f1",
+    "other": "Alle Formel-Updates installieren …"
+  },
+  "Tray.UpgradeFormulaeTooltip": {
+    "description": "Tooltip for upgrading all outdated formulae.",
+    "hash": "sha1-46b98bf05d51a6c306c9a339dcfbab10f27e8a61",
+    "other": "brew upgrade --formula im Terminal ausführen"
+  },
   "Tray.UpgradeLaunchFailed": {
     "description": "Status shown when the update Terminal could not be opened.",
     "hash": "sha1-827285811cbeffc808995a8fc4e082e36ef9b7d8",
@@ -308,6 +383,11 @@
     "hash": "sha1-fec8f4353fe8b3a731a128d9b66165fc368b2a46",
     "other": "Alle Homebrew-Updates"
   },
+  "Upgrade.CasksDescription": {
+    "description": "Heading in Terminal when all outdated casks are being upgraded.",
+    "hash": "sha1-00f12f1639887734a8d26979a2c80272458445e6",
+    "other": "Alle Homebrew-Cask-Updates"
+  },
   "Upgrade.Completed": {
     "description": "Terminal message after Homebrew finished successfully.",
     "hash": "sha1-08ac05266c8415ae996631247c5be56823477eb2",
@@ -317,6 +397,11 @@
     "description": "Terminal printf format after Homebrew exited unsuccessfully; %d is replaced by the exit status.",
     "hash": "sha1-bd468ffe53e33bdaaf28fae6663388d510d024eb",
     "other": "Update mit Status %d beendet."
+  },
+  "Upgrade.FormulaeDescription": {
+    "description": "Heading in Terminal when all outdated formulae are being upgraded.",
+    "hash": "sha1-0f15614406b149c3d9576d2a7253b93db18b21b3",
+    "other": "Alle Homebrew-Formel-Updates"
   },
   "Upgrade.PackageDescription": {
     "description": "Heading in Terminal when one package is being upgraded.",
