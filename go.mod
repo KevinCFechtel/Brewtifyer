@@ -13,7 +13,7 @@ tool github.com/nicksnyder/go-i18n/v2/goi18n
 require (
 	fyne.io/systray v1.12.2
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
-	golang.org/x/sys v0.48.0
+	golang.org/x/sys v0.49.0
 	golang.org/x/text v0.42.0
 )
 
