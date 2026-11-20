@@ -17,8 +17,15 @@ icon rules. This file is the short version.
 open dist/Brewtifyer.app
 ```
 
-CI runs the same checks plus `golangci-lint` and `govulncheck` on a macOS
-runner. Running them locally first is faster than waiting for the workflow.
+CI runs the same checks plus `golangci-lint` on a macOS runner. Running them
+locally first is faster than waiting for the workflow.
+
+The security workflow runs `govulncheck` and CodeQL on pushes, pull requests,
+and weekly. CodeQL checks Go on macOS and GitHub Actions on Linux; it does not
+analyze the Objective-C bridges. The required `Dependency review` PR check
+rejects dependency changes with known vulnerabilities rated moderate or higher.
+Third-party Actions are pinned to full commit SHAs and updated weekly by
+Dependabot.
 
 ## Architectural constraints
 
