@@ -108,12 +108,21 @@ Local-only notes belong in `AGENTS.local.md`, which is ignored.
 ## Continuous integration
 
 - `.github/workflows/ci.yml` runs gofmt verification, vet, the localization
-  check, `go test -race`, a universal build, `golangci-lint`, and `govulncheck`
-  on a macOS runner. Keep the scripts CI-usable.
+  check, `go test -race`, a universal build, and `golangci-lint` on a macOS
+  runner. Keep the scripts CI-usable.
+- The `Dependency review` PR check rejects dependency changes with known
+  vulnerabilities of moderate severity or higher. Keep its job name stable:
+  the main-branch ruleset requires it.
+- `.github/workflows/security.yml` runs `govulncheck` and CodeQL on pushes,
+  pull requests, and weekly. Go analysis uses an explicit cgo-enabled build
+  on macOS; Actions analysis runs on Linux. CodeQL does not analyze the
+  Objective-C bridges. Do not use the bundle or release scripts for extraction.
 - `Build/format.sh` rewrites files, so CI asserts with `gofmt -l` instead.
 - `.github/workflows/release.yml` verifies a tagged commit and uploads an
   unsigned bundle. Signing and notarization stay local by design.
-- Dependabot updates Go modules weekly and GitHub Actions monthly.
+- Pin third-party Actions to full commit SHAs with version comments.
+  Dependabot updates Go modules and GitHub Actions weekly; Actions updates
+  are grouped together.
 
 ## Release process
 
